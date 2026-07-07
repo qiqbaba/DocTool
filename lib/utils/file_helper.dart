@@ -170,47 +170,74 @@ class FileHelper {
     required void Function(int index, double progress, RenameItem item) onItemComplete,
     required void Function() onAllComplete,
   }) async {
-    for (int i = 0; i < items.length; i++) {
-      final item = items[i];
+    if (items.isEmpty) {
+      onAllComplete();
+      return;
+    }
+
+    final hasDirectory = items.any((item) => item.isDirectory);
+
+    if (hasDirectory) {
+      // 包含文件夹：为了避免层级目录命名冲突，使用串行重命名
+      for (int i = 0; i < items.length; i++) {
+        final item = items[i];
+        await _renameSingleItem(item);
+        onItemComplete(i, (i + 1) / items.length, item);
+      }
+    } else {
+      // 纯文件：使用并发协程（Future.wait）执行，提升处理速度
+      int completedCount = 0;
+      final List<Future<void>> futures = [];
       
-      // If name hasn't changed, skip but mark as success
-      if (item.newName.isEmpty || item.newName == item.baseName) {
-        item.isSuccess = true;
-        onItemComplete(i, (i + 1) / items.length, item);
-        continue;
+      Future<void> renameWorker(int index, RenameItem item) async {
+        await _renameSingleItem(item);
+        completedCount++;
+        onItemComplete(index, completedCount / items.length, item);
       }
 
-      // Check for name validity
-      if (_hasInvalidChars(item.newName)) {
-        item.isSuccess = false;
-        item.error = '包含非法字符';
-        onItemComplete(i, (i + 1) / items.length, item);
-        continue;
+      for (int i = 0; i < items.length; i++) {
+        futures.add(renameWorker(i, items[i]));
       }
-
-      try {
-        if (await item.entity.exists()) {
-          // Check if target file already exists
-          if (await FileSystemEntity.type(item.newPath) != FileSystemEntityType.notFound) {
-            item.isSuccess = false;
-            item.error = '目标路径已存在同名项目';
-          } else {
-            await item.entity.rename(item.newPath);
-            item.isSuccess = true;
-          }
-        } else {
-          item.isSuccess = false;
-          item.error = '源文件不存在';
-        }
-      } catch (e) {
-        item.isSuccess = false;
-        item.error = e.toString();
-      }
-
-      onItemComplete(i, (i + 1) / items.length, item);
+      await Future.wait(futures);
     }
     onAllComplete();
   }
+
+  /// 辅助方法：对单个文件/文件夹执行重命名操作和校验
+  static Future<void> _renameSingleItem(RenameItem item) async {
+    // 若名称未改变，则跳过并标记成功
+    if (item.newName.isEmpty || item.newName == item.baseName) {
+      item.isSuccess = true;
+      return;
+    }
+
+    // 校验非法字符
+    if (_hasInvalidChars(item.newName)) {
+      item.isSuccess = false;
+      item.error = '包含非法字符';
+      return;
+    }
+
+    try {
+      if (await item.entity.exists()) {
+        // 校验目标路径是否已存在同名项目
+        if (await FileSystemEntity.type(item.newPath) != FileSystemEntityType.notFound) {
+          item.isSuccess = false;
+          item.error = '目标路径已存在同名项目';
+        } else {
+          await item.entity.rename(item.newPath);
+          item.isSuccess = true;
+        }
+      } else {
+        item.isSuccess = false;
+        item.error = '源文件不存在';
+      }
+    } catch (e) {
+      item.isSuccess = false;
+      item.error = e.toString();
+    }
+  }
+
 
   static bool _hasInvalidChars(String name) {
     if (Platform.isWindows) {
