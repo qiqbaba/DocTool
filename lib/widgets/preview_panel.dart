@@ -6,6 +6,7 @@ class PreviewPanel extends StatefulWidget {
   final bool isScanning;
   final VoidCallback onRenameStarted;
   final VoidCallback onRenameCompleted;
+  final VoidCallback? onSearch;
 
   const PreviewPanel({
     super.key,
@@ -13,6 +14,7 @@ class PreviewPanel extends StatefulWidget {
     required this.isScanning,
     required this.onRenameStarted,
     required this.onRenameCompleted,
+    this.onSearch,
   });
 
   @override
@@ -152,20 +154,40 @@ class _PreviewPanelState extends State<PreviewPanel> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '实时对比预览',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '共 ${widget.items.length} 个项目，将更改 $changedCount 个',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '对比预览',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '共 ${widget.items.length} 个项目，将更改 $changedCount 个',
+                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: (widget.isScanning || _isExecuting || widget.onSearch == null)
+                      ? null
+                      : widget.onSearch,
+                  icon: const Icon(Icons.search, size: 20),
+                  label: const Text('预览'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigoAccent,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey[800],
+                    disabledForegroundColor: Colors.grey[600],
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: (_isExecuting || widget.items.isEmpty || changedCount == 0)
                       ? null
@@ -287,17 +309,51 @@ class _PreviewPanelState extends State<PreviewPanel> {
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                 child: Row(
                                   children: [
-                                    // Old Name
                                     Expanded(
-                                      child: Text(
-                                        displayOld,
-                                        style: TextStyle(
-                                          color: Colors.grey[300],
-                                          fontSize: 13,
-                                          decoration: hasChanged ? TextDecoration.lineThrough : null,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Tooltip(
+                                              message: '点击打开: ${item.currentPath}',
+                                              child: InkWell(
+                                                onTap: () => FileHelper.openFileOrFolder(item.currentPath),
+                                                child: Text(
+                                                  displayOld,
+                                                  style: TextStyle(
+                                                    color: Colors.grey[300],
+                                                    fontSize: 13,
+                                                    decoration: hasChanged ? TextDecoration.lineThrough : null,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Tooltip(
+                                            message: '打开文件/文件夹',
+                                            child: InkWell(
+                                              onTap: () => FileHelper.openFileOrFolder(item.currentPath),
+                                              borderRadius: BorderRadius.circular(4),
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(4.0),
+                                                child: Icon(Icons.open_in_new, size: 14, color: Colors.grey[500]),
+                                              ),
+                                            ),
+                                          ),
+                                          Tooltip(
+                                            message: '在文件夹中定位',
+                                            child: InkWell(
+                                              onTap: () => FileHelper.locateInExplorer(item.currentPath),
+                                              borderRadius: BorderRadius.circular(4),
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(4.0),
+                                                child: Icon(Icons.folder_open, size: 14, color: Colors.grey[500]),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     const Icon(Icons.chevron_right, size: 14, color: Colors.grey),

@@ -45,6 +45,52 @@ class RenameItem {
 }
 
 class FileHelper {
+  /// Open file or folder in system default explorer/viewer
+  static Future<void> openFileOrFolder(String path) async {
+    if (kIsWeb) return;
+    try {
+      if (Platform.isWindows) {
+        final file = File(path);
+        final directory = Directory(path);
+        
+        if (await directory.exists() || await file.exists()) {
+          // Process.run handles parameters correctly even if there are spaces.
+          await Process.run('explorer.exe', [path]);
+        } else {
+          // If the file/folder doesn't exist, open its parent directory
+          final parent = p.dirname(path);
+          if (await Directory(parent).exists()) {
+            await Process.run('explorer.exe', [parent]);
+          }
+        }
+      } else if (Platform.isAndroid) {
+        debugPrint('Open path on Android is not implemented natively: $path');
+      }
+    } catch (e) {
+      debugPrint('Error opening path: $e');
+    }
+  }
+
+  /// Locate file in Windows Explorer (open folder and select file)
+  static Future<void> locateInExplorer(String path) async {
+    if (kIsWeb) return;
+    try {
+      if (Platform.isWindows) {
+        final file = File(path);
+        if (await file.exists()) {
+          await Process.run('explorer.exe', ['/select,', path]);
+        } else {
+          final directory = Directory(path);
+          if (await directory.exists()) {
+            await Process.run('explorer.exe', [path]);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error locating path: $e');
+    }
+  }
+
   /// Request Android manage external storage permission
   static Future<bool> requestStoragePermission() async {
     if (kIsWeb) return true;
