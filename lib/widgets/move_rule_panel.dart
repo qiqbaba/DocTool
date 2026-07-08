@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import '../utils/move_logic.dart';
+import '../utils/theme_helper.dart';
 
 class MoveRulePanel extends StatefulWidget {
   final MoveFilterRule initialRule;
@@ -235,13 +236,13 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: const TextStyle(color: Colors.grey),
-      hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5)),
+      labelStyle: TextStyle(color: context.textColorSecondary),
+      hintStyle: TextStyle(color: context.textColorSecondary.withOpacity(0.5)),
       filled: true,
-      fillColor: const Color(0xFF1E1E22),
+      fillColor: context.inputBg,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF2C2C35)),
+        borderSide: BorderSide(color: context.inputBorderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -260,36 +261,36 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
       children: [
         // 0. Destination Selector Card (Highest Priority for Move)
         Card(
-          color: const Color(0xFF16161A),
+          color: context.cardBg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF232329)),
+            side: BorderSide(color: context.borderColor),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '移动目标目录与模式',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             '扁平化子孙文件到根目录并清理空文件夹',
-                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                            style: TextStyle(color: context.textColorPrimary, fontSize: 14, fontWeight: FontWeight.w500),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
-                            '将子孙文件夹中的所有文件移动到源目录根路径，并删除空文件夹',
-                            style: TextStyle(color: Colors.grey, fontSize: 11),
+                            '将子孙文件夹中的所有文件移动 to 源目录根路径，并删除空文件夹',
+                            style: TextStyle(color: context.textColorSecondary, fontSize: 11),
                           ),
                         ],
                       ),
@@ -310,7 +311,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                     ),
                   ],
                 ),
-                const Divider(color: Color(0xFF232329), height: 24),
+                Divider(color: context.borderColor, height: 24),
                 Opacity(
                   opacity: _rule.flattenToRoot ? 0.5 : 1.0,
                   child: Row(
@@ -319,9 +320,9 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E1E22),
+                            color: context.inputBg,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFF2C2C35)),
+                            border: Border.all(color: context.inputBorderColor),
                           ),
                           child: Text(
                             _rule.flattenToRoot
@@ -329,8 +330,8 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                                 : (_targetDirPath.isEmpty ? '未选择目标文件夹，请点击右侧选择' : _targetDirPath),
                             style: TextStyle(
                               color: _rule.flattenToRoot
-                                  ? Colors.grey
-                                  : (_targetDirPath.isEmpty ? Colors.grey : Colors.orangeAccent),
+                                  ? context.textColorSecondary
+                                  : (_targetDirPath.isEmpty ? context.textColorSecondary : Colors.orangeAccent),
                               fontSize: 13,
                               fontFamily: 'monospace',
                             ),
@@ -347,8 +348,8 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orangeAccent,
                           foregroundColor: Colors.black,
-                          disabledBackgroundColor: Colors.grey[800],
-                          disabledForegroundColor: Colors.grey[600],
+                          disabledBackgroundColor: context.isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                          disabledForegroundColor: context.isDarkMode ? Colors.grey[600] : Colors.grey[500],
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -366,19 +367,19 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
 
         // 1. Target & Range card
         Card(
-          color: const Color(0xFF16161A),
+          color: context.cardBg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF232329)),
+            side: BorderSide(color: context.borderColor),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '扫描与过滤对象',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
                 const SizedBox(height: 12),
 
@@ -387,7 +388,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                   opacity: _rule.flattenToRoot ? 0.5 : 1.0,
                   child: Row(
                     children: [
-                      const Text('移动目标:', style: TextStyle(color: Colors.grey)),
+                      Text('移动目标:', style: TextStyle(color: context.textColorSecondary)),
                       const SizedBox(width: 12),
                       Expanded(
                         child: SegmentedButton<MoveTarget>(
@@ -479,32 +480,32 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
 
         // 2. Move Options Card
         Card(
-          color: const Color(0xFF16161A),
+          color: context.cardBg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF232329)),
+            side: BorderSide(color: context.borderColor),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '同名冲突与目录结构设置',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
                 const SizedBox(height: 12),
                 
                 // Conflict Strategy Dropdown
                 Row(
                   children: [
-                    const Text('同名冲突时:', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                    Text('同名冲突时:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<ConflictStrategy>(
                         value: _conflictStrategy,
-                        dropdownColor: const Color(0xFF1E1E22),
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        dropdownColor: context.cardBg,
+                        style: TextStyle(color: context.textColorPrimary, fontSize: 14),
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           border: OutlineInputBorder(),
@@ -543,17 +544,17 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               '保持源文件夹目录结构',
-                              style: TextStyle(color: Colors.grey),
+                              style: TextStyle(color: context.textColorSecondary),
                             ),
                             Text(
                               '开启则按源相对层级移动；关闭则把文件拍平移动到目标根目录',
-                              style: TextStyle(color: Colors.grey, fontSize: 11),
+                              style: TextStyle(color: context.textColorSecondary, fontSize: 11),
                             ),
                           ],
                         ),
@@ -581,19 +582,19 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
 
         // 3. Filters card
         Card(
-          color: const Color(0xFF16161A),
+          color: context.cardBg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF232329)),
+            side: BorderSide(color: context.borderColor),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '文件与文件夹筛选条件',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
                 const SizedBox(height: 16),
 
@@ -601,7 +602,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                 if (showFileOptions && !_rule.duplicateFilesOnly) ...[
                   TextField(
                     controller: _extController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: context.textColorPrimary),
                     decoration: _buildInputDecoration(
                       '特定格式后缀 (多个用逗号隔开)',
                       hint: '例如: png, jpg, log, tmp (留空匹配所有)',
@@ -614,7 +615,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                 if (!_rule.duplicateFilesOnly) ...[
                   TextField(
                     controller: _nameController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: context.textColorPrimary),
                     decoration: _buildInputDecoration(
                       '名称包含特定文本',
                       hint: '输入匹配的文件/文件夹名称关键字',
@@ -622,7 +623,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                   ),
                   const SizedBox(height: 8),
                   CheckboxListTile(
-                    title: const Text('区分大小写', style: TextStyle(color: Colors.white, fontSize: 14)),
+                    title: Text('区分大小写', style: TextStyle(color: context.textColorPrimary, fontSize: 14)),
                     value: _rule.caseSensitive,
                     activeColor: Colors.orangeAccent,
                     onChanged: (val) {
@@ -635,12 +636,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                     controlAffinity: ListTileControlAffinity.leading,
                     dense: true,
                   ),
-                  const Divider(color: Color(0xFF232329), height: 24),
-                ],
-
-                // Size Filter Section
-                if (!_rule.duplicateFilesOnly) ...[
-                  const Text('大小筛选:', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                  Divider(color: context.borderColor, height: 24),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -648,8 +644,8 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                         flex: 3,
                         child: DropdownButtonFormField<SizeCondition>(
                           value: _rule.sizeCondition,
-                          dropdownColor: const Color(0xFF1E1E22),
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          dropdownColor: context.cardBg,
+                          style: TextStyle(color: context.textColorPrimary, fontSize: 14),
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             border: OutlineInputBorder(),
@@ -674,7 +670,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                           flex: 3,
                           child: TextField(
                             controller: _sizeValueController,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            style: TextStyle(color: context.textColorPrimary, fontSize: 14),
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
                             decoration: _buildInputDecoration('数值'),
@@ -685,8 +681,8 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                           flex: 2,
                           child: DropdownButtonFormField<SizeUnit>(
                             value: _selectedSizeUnit,
-                            dropdownColor: const Color(0xFF1E1E22),
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            dropdownColor: context.cardBg,
+                            style: TextStyle(color: context.textColorPrimary, fontSize: 14),
                             decoration: const InputDecoration(
                               contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                               border: OutlineInputBorder(),
@@ -707,17 +703,17 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                       ],
                     ],
                   ),
-                  const Divider(color: Color(0xFF232329), height: 24),
+                  Divider(color: context.borderColor, height: 24),
                 ],
 
                 // Time Filter Section
                 if (!_rule.duplicateFilesOnly) ...[
-                  const Text('修改时间筛选:', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                  Text('修改时间筛选:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<TimeCondition>(
                     value: _rule.timeCondition,
-                    dropdownColor: const Color(0xFF1E1E22),
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    dropdownColor: context.cardBg,
+                    style: TextStyle(color: context.textColorPrimary, fontSize: 14),
                     decoration: const InputDecoration(
                       contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       border: OutlineInputBorder(),
@@ -744,7 +740,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                             _rule.timeDate == null
                                 ? '未选择日期'
                                 : '选定日期: ${_rule.timeDate!.year}-${_rule.timeDate!.month}-${_rule.timeDate!.day}',
-                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            style: TextStyle(color: context.textColorPrimary, fontSize: 13),
                           ),
                         ),
                         ElevatedButton(
@@ -754,6 +750,26 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                               initialDate: _rule.timeDate ?? DateTime.now(),
                               firstDate: DateTime(2000),
                               lastDate: DateTime.now().add(const Duration(days: 365)),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: context.isDarkMode
+                                        ? const ColorScheme.dark(
+                                            primary: Colors.orangeAccent,
+                                            onPrimary: Colors.black,
+                                            surface: Color(0xFF1E1E22),
+                                            onSurface: Colors.white,
+                                          )
+                                        : const ColorScheme.light(
+                                            primary: Colors.orangeAccent,
+                                            onPrimary: Colors.white,
+                                            surface: Colors.white,
+                                            onSurface: Colors.black87,
+                                          ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
                             );
                             if (picked != null) {
                               setState(() {
@@ -762,8 +778,11 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                               });
                             }
                           },
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2C2C35)),
-                          child: const Text('选择日期', style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: context.inputBg,
+                            foregroundColor: context.textColorPrimary,
+                          ),
+                          child: const Text('选择日期'),
                         ),
                       ],
                     ),
@@ -771,25 +790,25 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                   if (_rule.timeCondition == TimeCondition.olderThanDays) ...[
                     TextField(
                       controller: _timeDaysController,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: context.textColorPrimary),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: _buildInputDecoration('天数阈值', hint: '例如：30'),
                     ),
                   ],
-                  const Divider(color: Color(0xFF232329), height: 24),
+                  Divider(color: context.borderColor, height: 24),
                 ],
 
                 // Hash MD5 Filter Section
                 if (showFileOptions && !_rule.duplicateFilesOnly) ...[
-                  const Text('MD5 哈希值特定匹配:', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                  Text('MD5 哈希值特定匹配:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
                         child: TextField(
                           controller: _hashController,
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          style: TextStyle(color: context.textColorPrimary, fontSize: 13),
                           decoration: _buildInputDecoration('目标 MD5 哈希值', hint: '输入32位MD5哈希字符串'),
                         ),
                       ),
@@ -815,14 +834,14 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                       ),
                     ],
                   ),
-                  const Divider(color: Color(0xFF232329), height: 24),
+                  Divider(color: context.borderColor, height: 24),
                 ],
 
-                // Shortcut / Special Filters Section
-                const Text('快捷/组合筛选 (包含上述类型限制):', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                 // Shortcut / Special Filters Section
+                Text('快捷/组合筛选 (包含上述类型限制):', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
                 const SizedBox(height: 8),
                 CheckboxListTile(
-                  title: const Text('仅匹配空文件 (0 字节文件)', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  title: Text('仅匹配空文件 (0 字节文件)', style: TextStyle(color: context.textColorPrimary, fontSize: 13)),
                   value: _rule.emptyFilesOnly,
                   activeColor: Colors.orangeAccent,
                   onChanged: (val) {
@@ -836,7 +855,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                   dense: true,
                 ),
                 CheckboxListTile(
-                  title: const Text('仅匹配空文件夹 (不含子文件)', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  title: Text('仅匹配空文件夹 (不含子文件)', style: TextStyle(color: context.textColorPrimary, fontSize: 13)),
                   value: _rule.emptyFoldersOnly,
                   activeColor: Colors.orangeAccent,
                   onChanged: (val) {
@@ -851,7 +870,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                 ),
                 if (showFileOptions)
                   CheckboxListTile(
-                    title: const Text('仅匹配重复文件 (MD5一致，自动保留最早修改的一份)', style: TextStyle(color: Colors.white, fontSize: 13)),
+                    title: Text('仅匹配重复文件 (MD5一致，自动保留最早修改的一份)', style: TextStyle(color: context.textColorPrimary, fontSize: 13)),
                     value: _rule.duplicateFilesOnly,
                     activeColor: Colors.orangeAccent,
                     onChanged: (val) {
@@ -865,8 +884,8 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                     dense: true,
                   ),
                 CheckboxListTile(
-                  title: const Text('移动时自动删除指定大小的小垃圾文件', style: TextStyle(color: Colors.white, fontSize: 13)),
-                  subtitle: const Text('符合设定大小的小文件在移动时会被直接删除而不搬移', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                  title: Text('移动时自动删除指定大小的小垃圾文件', style: TextStyle(color: context.textColorPrimary, fontSize: 13)),
+                  subtitle: Text('符合设定大小的小文件在移动时会被直接删除而不搬移', style: TextStyle(color: context.textColorSecondary, fontSize: 11)),
                   value: _rule.deleteSpecifiedSizeFiles,
                   activeColor: Colors.orangeAccent,
                   onChanged: (val) {
@@ -883,13 +902,13 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Text('大小限值: 小于 ', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                      Text('大小限值: 小于 ', style: TextStyle(color: context.textColorSecondary, fontSize: 13)),
                       const SizedBox(width: 8),
                       Expanded(
                         flex: 3,
                         child: TextField(
                           controller: _deleteSizeController,
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          style: TextStyle(color: context.textColorPrimary, fontSize: 13),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
                           decoration: _buildInputDecoration('数值'),
@@ -900,8 +919,8 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                         flex: 2,
                         child: DropdownButtonFormField<SizeUnit>(
                           value: _deleteSizeUnit,
-                          dropdownColor: const Color(0xFF1E1E22),
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          dropdownColor: context.cardBg,
+                          style: TextStyle(color: context.textColorPrimary, fontSize: 13),
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                             border: OutlineInputBorder(),

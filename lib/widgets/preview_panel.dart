@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/file_helper.dart';
+import '../utils/theme_helper.dart';
 
 class PreviewPanel extends StatefulWidget {
   final List<RenameItem> items;
@@ -156,12 +157,12 @@ class _PreviewPanelState extends State<PreviewPanel> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1E22),
+            backgroundColor: context.cardBg,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text('重命名执行完毕', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            title: Text('重命名执行完毕', style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold)),
             content: Text(
               '成功: $_successCount 个项目\n失败: $_failCount 个项目',
-              style: const TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(color: context.textColorSecondary, fontSize: 16),
             ),
             actions: [
               TextButton(
@@ -198,10 +199,10 @@ class _PreviewPanelState extends State<PreviewPanel> {
     }
 
     return Card(
-      color: const Color(0xFF16161A),
+      color: context.cardBg,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFF232329)),
+        side: BorderSide(color: context.borderColor),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -216,14 +217,14 @@ class _PreviewPanelState extends State<PreviewPanel> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         '对比预览',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '共 ${widget.items.length} 个项目，将更改 $changedCount 个',
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        style: TextStyle(color: context.textColorSecondary, fontSize: 12),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -239,8 +240,8 @@ class _PreviewPanelState extends State<PreviewPanel> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.indigoAccent,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey[800],
-                    disabledForegroundColor: Colors.grey[600],
+                    disabledBackgroundColor: context.isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                    disabledForegroundColor: context.isDarkMode ? Colors.grey[600] : Colors.grey[500],
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
@@ -255,8 +256,8 @@ class _PreviewPanelState extends State<PreviewPanel> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.indigoAccent,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey[800],
-                    disabledForegroundColor: Colors.grey[600],
+                    disabledBackgroundColor: context.isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                    disabledForegroundColor: context.isDarkMode ? Colors.grey[600] : Colors.grey[500],
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
@@ -280,14 +281,14 @@ class _PreviewPanelState extends State<PreviewPanel> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('正在重命名...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        Text('正在重命名...', style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold)),
                         Text('${(_progress * 100).toStringAsFixed(0)}%', style: const TextStyle(color: Colors.indigoAccent)),
                       ],
                     ),
                     const SizedBox(height: 8),
                     LinearProgressIndicator(
                       value: _progress,
-                      backgroundColor: Colors.grey[800],
+                      backgroundColor: context.isDarkMode ? Colors.grey[800] : Colors.grey[300],
                       valueColor: const AlwaysStoppedAnimation<Color>(Colors.indigoAccent),
                     ),
                     const SizedBox(height: 6),
@@ -295,7 +296,7 @@ class _PreviewPanelState extends State<PreviewPanel> {
                       '正在处理: $_currentExecutingItem',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      style: TextStyle(color: context.textColorSecondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -306,14 +307,14 @@ class _PreviewPanelState extends State<PreviewPanel> {
             // Preview List Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: const BoxDecoration(
-                color: Color(0xFF1E1E22),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+              decoration: BoxDecoration(
+                color: context.inputBg,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
               ),
               child: Row(
                 children: [
                   Expanded(child: _buildSortableHeader('原名称', 0)),
-                  const Icon(Icons.arrow_forward, size: 16, color: Colors.grey),
+                  Icon(Icons.arrow_forward, size: 16, color: context.textColorSecondary),
                   const SizedBox(width: 8),
                   Expanded(child: _buildSortableHeader('新名称', 1)),
                 ],
@@ -325,17 +326,17 @@ class _PreviewPanelState extends State<PreviewPanel> {
               child: widget.isScanning
                   ? const Center(child: CircularProgressIndicator())
                   : widget.items.isEmpty
-                      ? const Center(
-                          child: Text('暂无预览数据，请先选择文件夹并配置规则', style: TextStyle(color: Colors.grey)),
+                      ? Center(
+                          child: Text('暂无预览数据，请先选择文件夹并配置规则', style: TextStyle(color: context.textColorSecondary)),
                         )
                       : Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1A1A1E),
-                            borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
+                          decoration: BoxDecoration(
+                            color: context.listBg,
+                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
                           ),
                           child: ListView.separated(
                             itemCount: sortedItems.length,
-                            separatorBuilder: (context, index) => const Divider(color: Color(0xFF232329), height: 1),
+                            separatorBuilder: (context, index) => Divider(color: context.borderColor, height: 1),
                             itemBuilder: (context, index) {
                               final item = sortedItems[index];
                               final validationError = _getItemValidationError(item);
@@ -346,20 +347,20 @@ class _PreviewPanelState extends State<PreviewPanel> {
                                   ? item.newName 
                                   : (item.newName + item.extension);
 
-                              Color newNameColor = Colors.grey[400]!;
+                              Color newNameColor = context.textColorSecondary;
                               Color rowBgColor = Colors.transparent;
                               Widget? trailingIcon;
 
                               if (validationError != null) {
-                                newNameColor = Colors.redAccent;
-                                rowBgColor = Colors.red.withOpacity(0.05);
+                                newNameColor = context.isDarkMode ? Colors.redAccent : Colors.red[700]!;
+                                rowBgColor = Colors.red.withOpacity(context.isDarkMode ? 0.05 : 0.08);
                                 trailingIcon = Tooltip(
                                   message: validationError,
-                                  child: const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
+                                  child: Icon(Icons.error_outline, color: context.isDarkMode ? Colors.redAccent : Colors.red[700], size: 20),
                                 );
                               } else if (hasChanged) {
-                                newNameColor = Colors.greenAccent;
-                                rowBgColor = Colors.green.withOpacity(0.03);
+                                newNameColor = context.isDarkMode ? Colors.greenAccent : Colors.green[700]!;
+                                rowBgColor = Colors.green.withOpacity(context.isDarkMode ? 0.03 : 0.06);
                               }
 
                               return Container(
@@ -378,7 +379,7 @@ class _PreviewPanelState extends State<PreviewPanel> {
                                                 child: Text(
                                                   displayOld,
                                                   style: TextStyle(
-                                                    color: Colors.grey[300],
+                                                    color: context.textColorPrimary,
                                                     fontSize: 13,
                                                     decoration: hasChanged ? TextDecoration.lineThrough : null,
                                                   ),
@@ -396,7 +397,7 @@ class _PreviewPanelState extends State<PreviewPanel> {
                                               borderRadius: BorderRadius.circular(4),
                                               child: Padding(
                                                 padding: const EdgeInsets.all(4.0),
-                                                child: Icon(Icons.open_in_new, size: 14, color: Colors.grey[500]),
+                                                child: Icon(Icons.open_in_new, size: 14, color: context.textColorSecondary),
                                               ),
                                             ),
                                           ),
@@ -407,14 +408,14 @@ class _PreviewPanelState extends State<PreviewPanel> {
                                               borderRadius: BorderRadius.circular(4),
                                               child: Padding(
                                                 padding: const EdgeInsets.all(4.0),
-                                                child: Icon(Icons.folder_open, size: 14, color: Colors.grey[500]),
+                                                child: Icon(Icons.folder_open, size: 14, color: context.textColorSecondary),
                                               ),
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    const Icon(Icons.chevron_right, size: 14, color: Colors.grey),
+                                    Icon(Icons.chevron_right, size: 14, color: context.textColorSecondary),
                                     const SizedBox(width: 8),
                                     // New Name
                                     Expanded(

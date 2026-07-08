@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
 
+import 'utils/theme_helper.dart';
 import 'utils/rename_logic.dart';
 import 'utils/file_helper.dart';
 import 'widgets/android_dir_picker.dart';
@@ -23,15 +25,79 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    try {
+      final dir = await getApplicationSupportDirectory();
+      final file = File('${dir.path}/theme_setting.txt');
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        final mode = ThemeMode.values.firstWhere(
+          (e) => e.name == content.trim(),
+          orElse: () => ThemeMode.system,
+        );
+        setState(() {
+          _themeMode = mode;
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to load theme settings: $e');
+    }
+  }
+
+  Future<void> _saveTheme(ThemeMode mode) async {
+    try {
+      final dir = await getApplicationSupportDirectory();
+      final file = File('${dir.path}/theme_setting.txt');
+      await file.writeAsString(mode.name);
+    } catch (e) {
+      debugPrint('Failed to save theme settings: $e');
+    }
+  }
+
+  void _updateThemeMode(ThemeMode mode) {
+    setState(() {
+      _themeMode = mode;
+    });
+    _saveTheme(mode);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'DocTool - 重复操作解决助手',
       debugShowCheckedModeBanner: false,
+      themeMode: _themeMode,
       theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        colorScheme: const ColorScheme.light(
+          primary: Colors.indigoAccent,
+          secondary: Colors.purpleAccent,
+          surface: Colors.white,
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF3F3F7),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFFEEEEEE),
+          elevation: 0,
+        ),
+      ),
+      darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
         colorScheme: const ColorScheme.dark(
@@ -45,13 +111,23 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const MainDashboard(),
+      home: MainDashboard(
+        currentThemeMode: _themeMode,
+        onThemeModeChanged: _updateThemeMode,
+      ),
     );
   }
 }
 
 class MainDashboard extends StatefulWidget {
-  const MainDashboard({super.key});
+  final ThemeMode currentThemeMode;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
+
+  const MainDashboard({
+    super.key,
+    required this.currentThemeMode,
+    required this.onThemeModeChanged,
+  });
 
   @override
   State<MainDashboard> createState() => _MainDashboardState();
@@ -157,20 +233,82 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
     }
   }
 
+  void _showSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: context.cardBg,
+          title: Text(
+            '主题设置',
+            style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<ThemeMode>(
+                title: Text('亮色模式', style: TextStyle(color: context.textColorPrimary)),
+                value: ThemeMode.light,
+                groupValue: widget.currentThemeMode,
+                activeColor: Colors.indigoAccent,
+                onChanged: (ThemeMode? value) {
+                  if (value != null) {
+                    widget.onThemeModeChanged(value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              RadioListTile<ThemeMode>(
+                title: Text('暗色模式', style: TextStyle(color: context.textColorPrimary)),
+                value: ThemeMode.dark,
+                groupValue: widget.currentThemeMode,
+                activeColor: Colors.indigoAccent,
+                onChanged: (ThemeMode? value) {
+                  if (value != null) {
+                    widget.onThemeModeChanged(value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              RadioListTile<ThemeMode>(
+                title: Text('跟随系统', style: TextStyle(color: context.textColorPrimary)),
+                value: ThemeMode.system,
+                groupValue: widget.currentThemeMode,
+                activeColor: Colors.indigoAccent,
+                onChanged: (ThemeMode? value) {
+                  if (value != null) {
+                    widget.onThemeModeChanged(value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('关闭', style: TextStyle(color: context.textColorSecondary)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showPermissionRequiredDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E22),
-        title: const Text('需要存储管理权限', style: TextStyle(color: Colors.white)),
-        content: const Text(
+        backgroundColor: context.cardBg,
+        title: Text('需要存储管理权限', style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
           '在 Android 11 及以上版本中，软件需要“所有文件访问权限”才能遍历外部文件夹并执行高速文件操作。请在接下来的设置中开启此权限。',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(color: context.textColorSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text('取消', style: TextStyle(color: context.textColorSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -358,12 +496,39 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
         : (_currentTab == 1 ? Colors.redAccent : Colors.orangeAccent);
 
     return Scaffold(
+      appBar: isMobileLayout
+          ? AppBar(
+              backgroundColor: context.cardBg,
+              title: Text(
+                _currentTab == 0
+                    ? '批量重命名'
+                    : (_currentTab == 1 ? '批量删除' : '批量移动'),
+                style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              actions: [
+                IconButton(
+                  onPressed: _showSettingsDialog,
+                  icon: const Icon(Icons.settings),
+                  tooltip: '主题设置',
+                  style: IconButton.styleFrom(
+                    foregroundColor: context.textColorSecondary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              elevation: 0,
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(1),
+                child: Divider(color: context.borderColor, height: 1, thickness: 1),
+              ),
+            )
+          : null,
       body: isMobileLayout
           ? _buildMobileView()
           : Row(
               children: [
                 NavigationRail(
-                  backgroundColor: const Color(0xFF16161A),
+                  backgroundColor: context.cardBg,
                   selectedIndex: _currentTab,
                   onDestinationSelected: (int index) {
                     setState(() {
@@ -375,11 +540,11 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                     color: activeColor,
                     fontWeight: FontWeight.bold,
                   ),
-                  unselectedLabelTextStyle: const TextStyle(color: Colors.grey),
+                  unselectedLabelTextStyle: TextStyle(color: context.textColorSecondary),
                   selectedIconTheme: IconThemeData(
                     color: activeColor,
                   ),
-                  unselectedIconTheme: const IconThemeData(color: Colors.grey),
+                  unselectedIconTheme: IconThemeData(color: context.textColorSecondary),
                   destinations: const [
                     NavigationRailDestination(
                       icon: Icon(Icons.auto_fix_high),
@@ -394,8 +559,19 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                       label: Text('批量移动'),
                     ),
                   ],
+                  trailing: Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: IconButton(
+                      onPressed: _showSettingsDialog,
+                      icon: const Icon(Icons.settings, size: 24),
+                      tooltip: '主题设置',
+                      style: IconButton.styleFrom(
+                        foregroundColor: context.textColorSecondary,
+                      ),
+                    ),
+                  ),
                 ),
-                const VerticalDivider(thickness: 1, width: 1, color: Color(0xFF232329)),
+                VerticalDivider(thickness: 1, width: 1, color: context.borderColor),
                 Expanded(
                   child: _buildDesktopView(),
                 ),
@@ -409,9 +585,9 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                   _currentTab = index;
                 });
               },
-              backgroundColor: const Color(0xFF16161A),
+              backgroundColor: context.cardBg,
               selectedItemColor: activeColor,
-              unselectedItemColor: Colors.grey,
+              unselectedItemColor: context.textColorSecondary,
               items: const [
                 BottomNavigationBarItem(
                   icon: Icon(Icons.auto_fix_high),
@@ -821,19 +997,19 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
         : (_currentTab == 1 ? Colors.redAccent : Colors.orangeAccent);
 
     return Card(
-      color: const Color(0xFF16161A),
+      color: context.cardBg,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFF232329)),
+        side: BorderSide(color: context.borderColor),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '选择目标文件夹',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+              style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
             ),
             const SizedBox(height: 12),
             Row(
@@ -842,14 +1018,14 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E22),
+                      color: context.inputBg,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF2C2C35)),
+                      border: Border.all(color: context.inputBorderColor),
                     ),
                     child: Text(
                       _selectedDirPath.isEmpty ? '未选择任何目录' : _selectedDirPath,
                       style: TextStyle(
-                        color: _selectedDirPath.isEmpty ? Colors.grey : activeColor,
+                        color: _selectedDirPath.isEmpty ? context.textColorSecondary : activeColor,
                         fontSize: 13,
                         fontFamily: 'monospace',
                       ),
@@ -865,8 +1041,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                     icon: const Icon(Icons.refresh, size: 20),
                     tooltip: '重新扫描目录',
                     style: IconButton.styleFrom(
-                      foregroundColor: Colors.grey[400],
-                      hoverColor: Colors.white10,
+                      foregroundColor: context.textColorSecondary,
                     ),
                   ),
                 ],

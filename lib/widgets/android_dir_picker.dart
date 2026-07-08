@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
+import '../utils/theme_helper.dart';
 
 class AndroidDirPicker extends StatefulWidget {
   final String initialPath;
@@ -100,7 +101,7 @@ class _AndroidDirPickerState extends State<AndroidDirPicker> {
     final breadcrumbs = _getBreadcrumbs();
 
     return Dialog(
-      backgroundColor: const Color(0xFF1E1E22),
+      backgroundColor: context.cardBg,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         width: double.maxFinite,
@@ -116,12 +117,12 @@ class _AndroidDirPickerState extends State<AndroidDirPicker> {
                 Text(
                   '选择文件夹',
                   style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
+                    color: context.textColorPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.grey),
+                  icon: Icon(Icons.close, color: context.textColorSecondary),
                   onPressed: () => Navigator.pop(context, null),
                 ),
               ],
@@ -144,22 +145,22 @@ class _AndroidDirPickerState extends State<AndroidDirPicker> {
                         child: Text(
                           crumb['name']!,
                           style: TextStyle(
-                            color: isLast ? theme.colorScheme.primary : Colors.grey[400],
+                            color: isLast ? theme.colorScheme.primary : context.textColorSecondary,
                             fontWeight: isLast ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
                       ),
                       if (!isLast)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 6.0),
-                          child: Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                          child: Icon(Icons.chevron_right, size: 16, color: context.textColorSecondary),
                         ),
                     ],
                   );
                 },
               ),
             ),
-            const Divider(color: Colors.grey, height: 1),
+            Divider(color: context.borderColor, height: 1),
             
             // Subdirectories List
             Expanded(
@@ -175,7 +176,7 @@ class _AndroidDirPickerState extends State<AndroidDirPicker> {
                               Text(
                                 _errorMessage!,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.grey),
+                                style: TextStyle(color: context.textColorSecondary),
                               ),
                               const SizedBox(height: 16),
                               if (_currentPath != '/storage/emulated/0')
@@ -192,10 +193,10 @@ class _AndroidDirPickerState extends State<AndroidDirPicker> {
                           ),
                         )
                       : _subDirs.isEmpty
-                          ? const Center(
+                          ? Center(
                               child: Text(
                                 '空文件夹',
-                                style: TextStyle(color: Colors.grey),
+                                style: TextStyle(color: context.textColorSecondary),
                               ),
                             )
                           : ListView.builder(
@@ -207,7 +208,7 @@ class _AndroidDirPickerState extends State<AndroidDirPicker> {
                                   leading: const Icon(Icons.folder, color: Colors.amber),
                                   title: Text(
                                     name,
-                                    style: const TextStyle(color: Colors.white),
+                                    style: TextStyle(color: context.textColorPrimary),
                                   ),
                                   onTap: () => _loadDirectory(dir.path),
                                 );
@@ -215,7 +216,7 @@ class _AndroidDirPickerState extends State<AndroidDirPicker> {
                             ),
             ),
             
-            const Divider(color: Colors.grey, height: 1),
+            Divider(color: context.borderColor, height: 1),
             const SizedBox(height: 15),
             
             // Bottom Action Bar
@@ -230,8 +231,8 @@ class _AndroidDirPickerState extends State<AndroidDirPicker> {
                   icon: const Icon(Icons.arrow_upward),
                   label: const Text('返回上一级'),
                   style: TextButton.styleFrom(
-                    foregroundColor: Colors.grey[400],
-                    disabledForegroundColor: Colors.grey[800],
+                    foregroundColor: context.textColorSecondary,
+                    disabledForegroundColor: context.isDarkMode ? Colors.grey[800] : Colors.grey[300],
                   ),
                 ),
                 

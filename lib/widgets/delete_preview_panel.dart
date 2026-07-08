@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/delete_logic.dart';
 import '../utils/file_helper.dart';
+import '../utils/theme_helper.dart';
 
 class DeletePreviewPanel extends StatefulWidget {
   final List<DeleteItem> items;
@@ -122,13 +123,13 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF1E1E22),
+              backgroundColor: context.cardBg,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Row(
+              title: Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 28),
-                  SizedBox(width: 8),
-                  Text('确认批量删除？', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 28),
+                  const SizedBox(width: 8),
+                  Text('确认批量删除？', style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold)),
                 ],
               ),
               content: Column(
@@ -137,7 +138,7 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                 children: [
                   Text(
                     '您即将删除 ${selectedItems.length} 个文件或文件夹。\n预计释放空间: ${_formatSize(_selectedSizeSum)}。',
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: TextStyle(color: context.textColorPrimary, fontSize: 14),
                   ),
                   const SizedBox(height: 12),
                   const Text(
@@ -146,9 +147,9 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                   ),
                   const SizedBox(height: 16),
                   CheckboxListTile(
-                    title: const Text(
+                    title: Text(
                       '我已理解该操作的严重性，并确认删除上述选定文件。',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                      style: TextStyle(color: context.textColorSecondary, fontSize: 12),
                     ),
                     value: understood,
                     activeColor: Colors.redAccent,
@@ -166,7 +167,7 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('取消', style: TextStyle(color: Colors.grey)),
+                  child: Text('取消', style: TextStyle(color: context.textColorSecondary)),
                 ),
                 ElevatedButton(
                   onPressed: understood
@@ -175,8 +176,8 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey[800],
-                    disabledForegroundColor: Colors.grey[600],
+                    disabledBackgroundColor: context.isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                    disabledForegroundColor: context.isDarkMode ? Colors.grey[600] : Colors.grey[500],
                   ),
                   child: const Text('确认永久删除'),
                 ),
@@ -223,12 +224,12 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1E22),
+            backgroundColor: context.cardBg,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text('清理完毕', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            title: Text('清理完毕', style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold)),
             content: Text(
               '删除成功: $_successCount 个项目\n删除失败: $_failCount 个项目\n共释放空间: ${_formatSize(_selectedSizeSum)}',
-              style: const TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(color: context.textColorSecondary, fontSize: 16),
             ),
             actions: [
               TextButton(
@@ -270,10 +271,10 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
     }
 
     return Card(
-      color: const Color(0xFF16161A),
+      color: context.cardBg,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFF232329)),
+        side: BorderSide(color: context.borderColor),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -288,14 +289,14 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         '清理队列预览',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '扫描到 ${widget.items.length} 个项目，已选择 $_selectedCount 个，预计释放空间: ${_formatSize(_selectedSizeSum)}',
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        style: TextStyle(color: context.textColorSecondary, fontSize: 12),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -311,8 +312,8 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey[800],
-                    disabledForegroundColor: Colors.grey[600],
+                    disabledBackgroundColor: context.isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                    disabledForegroundColor: context.isDarkMode ? Colors.grey[600] : Colors.grey[500],
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
@@ -327,8 +328,8 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey[800],
-                    disabledForegroundColor: Colors.grey[600],
+                    disabledBackgroundColor: context.isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                    disabledForegroundColor: context.isDarkMode ? Colors.grey[600] : Colors.grey[500],
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
@@ -352,14 +353,14 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('正在删除文件...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        Text('正在删除文件...', style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold)),
                         Text('${(_progress * 100).toStringAsFixed(0)}%', style: const TextStyle(color: Colors.redAccent)),
                       ],
                     ),
                     const SizedBox(height: 8),
                     LinearProgressIndicator(
                       value: _progress,
-                      backgroundColor: Colors.grey[800],
+                      backgroundColor: context.isDarkMode ? Colors.grey[800] : Colors.grey[300],
                       valueColor: const AlwaysStoppedAnimation<Color>(Colors.redAccent),
                     ),
                     const SizedBox(height: 6),
@@ -367,7 +368,7 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                       '正在删除: $_currentExecutingItem',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      style: TextStyle(color: context.textColorSecondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -378,9 +379,9 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
             // Selection Header Table Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: const BoxDecoration(
-                color: Color(0xFF1E1E22),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+              decoration: BoxDecoration(
+                color: context.inputBg,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
               ),
               child: Row(
                 children: [
@@ -420,12 +421,12 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                         constraints: const BoxConstraints(maxWidth: 400),
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E1E22),
+                          color: context.cardBg,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFF2D2D34)),
+                          border: Border.all(color: context.borderColor),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withOpacity(0.15),
                               blurRadius: 15,
                               offset: const Offset(0, 8),
                             ),
@@ -445,7 +446,7 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                             const SizedBox(height: 24),
                             Text(
                               widget.scanStatus.isNotEmpty ? widget.scanStatus : '正在扫描中...',
-                              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: context.textColorPrimary, fontSize: 14, fontWeight: FontWeight.bold),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
@@ -453,7 +454,7 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                               borderRadius: BorderRadius.circular(4),
                               child: LinearProgressIndicator(
                                 value: widget.scanProgress > 0.0 ? widget.scanProgress : null,
-                                backgroundColor: const Color(0xFF2D2D34),
+                                backgroundColor: context.isDarkMode ? const Color(0xFF2D2D34) : Colors.grey[300],
                                 valueColor: const AlwaysStoppedAnimation<Color>(Colors.redAccent),
                                 minHeight: 6,
                               ),
@@ -470,17 +471,17 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                       ),
                     )
                   : widget.items.isEmpty
-                      ? const Center(
-                          child: Text('没有符合删除条件的文件/文件夹', style: TextStyle(color: Colors.grey)),
+                      ? Center(
+                          child: Text('没有符合删除条件的文件/文件夹', style: TextStyle(color: context.textColorSecondary)),
                         )
                       : Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1A1A1E),
-                            borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
+                          decoration: BoxDecoration(
+                            color: context.listBg,
+                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
                           ),
                           child: ListView.separated(
                             itemCount: sortedItems.length,
-                            separatorBuilder: (context, index) => const Divider(color: Color(0xFF232329), height: 1),
+                            separatorBuilder: (context, index) => Divider(color: context.borderColor, height: 1),
                             itemBuilder: (context, index) {
                               final item = sortedItems[index];
                               
@@ -544,7 +545,7 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                                               onTap: () => FileHelper.openFileOrFolder(item.path),
                                               child: Text(
                                                 item.path,
-                                                style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                                                style: TextStyle(color: context.textColorSecondary, fontSize: 11),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
@@ -584,12 +585,12 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                                         children: [
                                           Text(
                                             _formatSize(item.size),
-                                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                                            style: TextStyle(color: context.textColorPrimary, fontSize: 12),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
                                             _formatDate(item.lastModified),
-                                            style: TextStyle(color: Colors.grey[600], fontSize: 10),
+                                            style: TextStyle(color: context.textColorSecondary, fontSize: 10),
                                           ),
                                         ],
                                       ),

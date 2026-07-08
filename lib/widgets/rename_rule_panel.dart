@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/rename_logic.dart';
+import '../utils/theme_helper.dart';
 
 class RenameRulePanel extends StatefulWidget {
   final RenameRule initialRule;
@@ -192,13 +193,13 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: const TextStyle(color: Colors.grey),
-      hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5)),
+      labelStyle: TextStyle(color: context.textColorSecondary),
+      hintStyle: TextStyle(color: context.textColorSecondary.withOpacity(0.5)),
       filled: true,
-      fillColor: const Color(0xFF1E1E22),
+      fillColor: context.inputBg,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF2C2C35)),
+        borderSide: BorderSide(color: context.inputBorderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -214,8 +215,8 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
       children: [
         Text(
           title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.textColorPrimary,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
@@ -236,26 +237,26 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
       children: [
         // Target & Range selection
         Card(
-          color: const Color(0xFF16161A),
+          color: context.cardBg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF232329)),
+            side: BorderSide(color: context.borderColor),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '重命名范围',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
                 const SizedBox(height: 12),
                 
                 // Object Type Segment
                 Row(
                   children: [
-                    const Text('对象类型:', style: TextStyle(color: Colors.grey)),
+                    Text('对象类型:', style: TextStyle(color: context.textColorSecondary)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: SegmentedButton<bool>(
@@ -293,7 +294,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                   children: [
                     Text(
                       _isFileTarget ? '包含子孙文件 (递归)' : '包含子孙文件夹 (递归)',
-                      style: const TextStyle(color: Colors.grey),
+                      style: TextStyle(color: context.textColorSecondary),
                     ),
                     Switch(
                       value: _recursive,
@@ -313,7 +314,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                   const SizedBox(height: 8),
                   TextField(
                     controller: _extController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: context.textColorPrimary),
                     decoration: _buildInputDecoration(
                       '限制格式 (多个格式用逗号隔开)',
                       hint: '例如: png, jpg, mp4 (留空或 * 代表所有文件)',
@@ -331,7 +332,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
         TabBar(
           controller: _tabController,
           labelColor: Colors.indigoAccent,
-          unselectedLabelColor: Colors.grey,
+          unselectedLabelColor: context.textColorSecondary,
           indicatorColor: Colors.indigoAccent,
           tabs: const [
             Tab(text: '插入文本', icon: Icon(Icons.add_circle_outline)),
@@ -363,7 +364,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
   Widget _buildInsertTab() {
     final ins = _rule.insertRule;
     return Card(
-      color: const Color(0xFF16161A),
+      color: context.cardBg,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -380,7 +381,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
             if (ins.enabled) ...[
               TextField(
                 controller: _insertTextController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.textColorPrimary),
                 decoration: _buildInputDecoration('插入内容', hint: '输入要插入的文本'),
               ),
               const SizedBox(height: 16),
@@ -399,7 +400,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 },
               ),
               const SizedBox(height: 16),
-              const Text('插入位置:', style: TextStyle(color: Colors.grey)),
+              Text('插入位置:', style: TextStyle(color: context.textColorSecondary)),
               const SizedBox(height: 8),
               SegmentedButton<InsertPosition>(
                 segments: const [
@@ -419,7 +420,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 const SizedBox(height: 16),
                 TextField(
                   controller: _insertIndexController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: context.textColorPrimary),
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: _buildInputDecoration('插入位置索引 (0-based)', hint: '例如: 3 表示在第3个字符处插入'),
@@ -435,7 +436,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
   Widget _buildDeleteTab() {
     final del = _rule.deleteRule;
     return Card(
-      color: const Color(0xFF16161A),
+      color: context.cardBg,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -450,12 +451,12 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
             }),
             const SizedBox(height: 12),
             if (del.enabled) ...[
-              const Text('删除模式:', style: TextStyle(color: Colors.grey)),
+              Text('删除模式:', style: TextStyle(color: context.textColorSecondary)),
               const SizedBox(height: 8),
               DropdownButtonFormField<DeleteMode>(
                 value: del.mode,
-                dropdownColor: const Color(0xFF1E1E22),
-                style: const TextStyle(color: Colors.white),
+                dropdownColor: context.cardBg,
+                style: TextStyle(color: context.textColorPrimary),
                 decoration: _buildInputDecoration('选择删除模式'),
                 items: const [
                   DropdownMenuItem(value: DeleteMode.match, child: Text('匹配内容删除')),
@@ -478,7 +479,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
               if (del.mode == DeleteMode.match) ...[
                 TextField(
                   controller: _deleteMatchController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: context.textColorPrimary),
                   decoration: _buildInputDecoration('要删除的内容', hint: '输入被匹配的关键字'),
                 ),
               ],
@@ -487,7 +488,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
               if (del.mode == DeleteMode.rangeEnds) ...[
                 Row(
                   children: [
-                    const Text('方向:', style: TextStyle(color: Colors.grey)),
+                    Text('方向:', style: TextStyle(color: context.textColorSecondary)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: SegmentedButton<bool>(
@@ -509,7 +510,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 const SizedBox(height: 16),
                 TextField(
                   controller: _deleteCountController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: context.textColorPrimary),
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: _buildInputDecoration('删除字符个数', hint: '要删除的字符数量'),
@@ -523,20 +524,20 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                     Expanded(
                       child: TextField(
                         controller: _deleteStartController,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: context.textColorPrimary),
                         keyboardType: TextInputType.number,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         decoration: _buildInputDecoration('起始索引 (0-based)'),
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text('至', style: TextStyle(color: Colors.grey)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text('至', style: TextStyle(color: context.textColorSecondary)),
                     ),
                     Expanded(
                       child: TextField(
                         controller: _deleteEndController,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: context.textColorPrimary),
                         keyboardType: TextInputType.number,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         decoration: _buildInputDecoration('结束索引 (0-based)'),
@@ -545,9 +546,9 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '注意：区间为闭区间，如：1至3会删除第1, 2, 3个字符',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                  style: TextStyle(color: context.textColorSecondary, fontSize: 12),
                 ),
               ],
               
@@ -556,13 +557,13 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 TextField(
                   controller: _deleteAnchorController,
                   maxLength: 1,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: context.textColorPrimary),
                   decoration: _buildInputDecoration('定位字符', hint: '输入单个字符'),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Text('删除方向:', style: TextStyle(color: Colors.grey)),
+                    Text('删除方向:', style: TextStyle(color: context.textColorSecondary)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: SegmentedButton<DeleteDirection>(
@@ -583,7 +584,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 ),
                 const SizedBox(height: 12),
                 CheckboxListTile(
-                  title: const Text('删除定位字符本身', style: TextStyle(color: Colors.white)),
+                  title: Text('删除定位字符本身', style: TextStyle(color: context.textColorPrimary)),
                   value: del.includeAnchor,
                   activeColor: Colors.indigoAccent,
                   checkColor: Colors.white,
@@ -607,7 +608,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
   Widget _buildParentDirTab() {
     final pdir = _rule.parentDirRule;
     return Card(
-      color: const Color(0xFF16161A),
+      color: context.cardBg,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -622,9 +623,9 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
             }),
             const SizedBox(height: 12),
             if (pdir.enabled) ...[
-              const Text(
+              Text(
                 '直接父文件夹名称将插入到新文件名中。',
-                style: TextStyle(color: Colors.grey, fontSize: 13),
+                style: TextStyle(color: context.textColorSecondary, fontSize: 13),
               ),
               const SizedBox(height: 16),
               _buildSeparatorSection(
@@ -642,7 +643,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 },
               ),
               const SizedBox(height: 16),
-              const Text('插入位置:', style: TextStyle(color: Colors.grey)),
+              Text('插入位置:', style: TextStyle(color: context.textColorSecondary)),
               const SizedBox(height: 8),
               SegmentedButton<InsertPosition>(
                 segments: const [
@@ -662,7 +663,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 const SizedBox(height: 16),
                 TextField(
                   controller: _parentDirIndexController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: context.textColorPrimary),
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: _buildInputDecoration('插入位置索引 (0-based)'),
@@ -692,7 +693,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('分隔符:', style: TextStyle(color: Colors.grey, fontSize: 14)),
+        Text('分隔符:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8.0,
@@ -703,7 +704,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
               label: Text(
                 entry.value,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.grey[300],
+                  color: isSelected ? Colors.white : context.textColorSecondary,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
@@ -714,11 +715,11 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 }
               },
               selectedColor: Colors.indigo,
-              backgroundColor: const Color(0xFF1E1E22),
+              backgroundColor: context.inputBg,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
                 side: BorderSide(
-                  color: isSelected ? Colors.indigoAccent : const Color(0xFF2C2C35),
+                  color: isSelected ? Colors.indigoAccent : context.inputBorderColor,
                   width: 1,
                 ),
               ),
@@ -732,7 +733,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
             width: 200,
             child: TextField(
               controller: customController,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: context.textColorPrimary),
               decoration: _buildInputDecoration(
                 '自定义分隔符',
                 hint: '例如: _v1_',
