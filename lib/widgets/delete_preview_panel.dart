@@ -33,6 +33,50 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
   int _successCount = 0;
   int _failCount = 0;
 
+  int _sortColumnIndex = -1;
+  bool _sortAscending = true;
+
+  Widget _buildSortableHeader(String title, int columnIndex) {
+    final isSelected = _sortColumnIndex == columnIndex;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          if (_sortColumnIndex == columnIndex) {
+            if (_sortAscending) {
+              _sortAscending = false;
+            } else {
+              _sortColumnIndex = -1;
+            }
+          } else {
+            _sortColumnIndex = columnIndex;
+            _sortAscending = true;
+          }
+        });
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? Colors.redAccent : Colors.grey,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            isSelected
+                ? (_sortAscending ? Icons.arrow_drop_up : Icons.arrow_drop_down)
+                : Icons.sort,
+            size: 16,
+            color: isSelected ? Colors.redAccent : Colors.grey[600],
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatSize(int bytes) {
     if (bytes <= 0) return '0 B';
     if (bytes < 1024) return '$bytes B';
@@ -92,7 +136,7 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '您即将删除 $selectedItems.length 个文件或文件夹。\n预计释放空间: ${_formatSize(_selectedSizeSum)}。',
+                    '您即将删除 ${selectedItems.length} 个文件或文件夹。\n预计释放空间: ${_formatSize(_selectedSizeSum)}。',
                     style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                   const SizedBox(height: 12),
@@ -206,6 +250,24 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
   Widget build(BuildContext context) {
     final allChecked = widget.items.isNotEmpty && widget.items.every((item) => item.isSelected);
     final someChecked = widget.items.any((item) => item.isSelected) && !allChecked;
+
+    List<DeleteItem> sortedItems = List.from(widget.items);
+    if (_sortColumnIndex == 0) {
+      sortedItems.sort((a, b) {
+        int cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        return _sortAscending ? cmp : -cmp;
+      });
+    } else if (_sortColumnIndex == 1) {
+      sortedItems.sort((a, b) {
+        int cmp = a.matchReason.toLowerCase().compareTo(b.matchReason.toLowerCase());
+        return _sortAscending ? cmp : -cmp;
+      });
+    } else if (_sortColumnIndex == 2) {
+      sortedItems.sort((a, b) {
+        int cmp = a.size.compareTo(b.size);
+        return _sortAscending ? cmp : -cmp;
+      });
+    }
 
     return Card(
       color: const Color(0xFF16161A),
@@ -335,17 +397,17 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                     },
                   ),
                   const SizedBox(width: 4),
-                  const Expanded(
+                  Expanded(
                     flex: 5,
-                    child: Text('项目名称', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
+                    child: _buildSortableHeader('项目名称', 0),
                   ),
-                  const Expanded(
+                  Expanded(
                     flex: 3,
-                    child: Text('匹配原因', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
+                    child: _buildSortableHeader('匹配原因', 1),
                   ),
-                  const Expanded(
+                  Expanded(
                     flex: 2,
-                    child: Text('大小', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
+                    child: _buildSortableHeader('大小', 2),
                   ),
                 ],
               ),
@@ -417,10 +479,10 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                             borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
                           ),
                           child: ListView.separated(
-                            itemCount: widget.items.length,
+                            itemCount: sortedItems.length,
                             separatorBuilder: (context, index) => const Divider(color: Color(0xFF232329), height: 1),
                             itemBuilder: (context, index) {
-                              final item = widget.items[index];
+                              final item = sortedItems[index];
                               
                               IconData iconData = Icons.insert_drive_file;
                               Color iconColor = Colors.grey;

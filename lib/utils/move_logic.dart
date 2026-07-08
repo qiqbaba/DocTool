@@ -38,6 +38,9 @@ class MoveFilterRule {
 
   // Move-specific Options
   final bool keepStructure; // Whether to keep relative directory structure
+  final bool flattenToRoot; // Whether to move all nested files to source root and delete empty folders
+  final bool deleteSpecifiedSizeFiles; // Whether to delete specified size files during move
+  final int deleteSizeLimitBytes; // Size limit in bytes for auto-deletion
 
   MoveFilterRule({
     this.target = MoveTarget.file,
@@ -56,6 +59,9 @@ class MoveFilterRule {
     this.timeDate,
     this.timeDays = 30,
     this.keepStructure = true,
+    this.flattenToRoot = false,
+    this.deleteSpecifiedSizeFiles = false,
+    this.deleteSizeLimitBytes = 1024,
   });
 
   MoveFilterRule copyWith({
@@ -75,6 +81,9 @@ class MoveFilterRule {
     DateTime? timeDate,
     int? timeDays,
     bool? keepStructure,
+    bool? flattenToRoot,
+    bool? deleteSpecifiedSizeFiles,
+    int? deleteSizeLimitBytes,
   }) {
     return MoveFilterRule(
       target: target ?? this.target,
@@ -93,6 +102,9 @@ class MoveFilterRule {
       timeDate: timeDate ?? this.timeDate,
       timeDays: timeDays ?? this.timeDays,
       keepStructure: keepStructure ?? this.keepStructure,
+      flattenToRoot: flattenToRoot ?? this.flattenToRoot,
+      deleteSpecifiedSizeFiles: deleteSpecifiedSizeFiles ?? this.deleteSpecifiedSizeFiles,
+      deleteSizeLimitBytes: deleteSizeLimitBytes ?? this.deleteSizeLimitBytes,
     );
   }
 }
@@ -452,8 +464,9 @@ class MoveLogic {
     onProgress?.call(0.0, '正在获取文件列表...');
 
     try {
+      final bool actualRecursive = rule.flattenToRoot ? true : recursive;
       final List<FileSystemEntity> entities =
-          await dir.list(recursive: recursive, followLinks: false).toList();
+          await dir.list(recursive: actualRecursive, followLinks: false).toList();
 
       if (entities.isEmpty) {
         onProgress?.call(1.0, '扫描完成，未发现文件');
@@ -463,6 +476,8 @@ class MoveLogic {
 
       List<MoveItem> candidateFiles = [];
       final List<MoveItem> pendingHashFilterItems = [];
+
+      final normalizedRootPath = p.normalize(rootPath);
 
       for (int i = 0; i < entities.length; i++) {
         final entity = entities[i];
@@ -479,6 +494,12 @@ class MoveLogic {
         }
 
         final isDir = entity is Directory;
+
+        if (rule.flattenToRoot) {
+          if (isDir) {
+            continue;
+          }
+        }
 
         if (isDir) {
           if (rule.duplicateFilesOnly) {
@@ -576,70 +597,82 @@ class MoveLogic {
             continue;
           }
 
-          bool matched = true;
-          List<String> reasons = [];
-
           final fileSize = await entity.length();
           final stat = await entity.stat();
           final modified = stat.modified;
 
-          if (rule.emptyFilesOnly) {
-            if (fileSize > 0) {
-              matched = false;
-            } else {
-              reasons.add('空文件');
+          final bool shouldAutoDelete = rule.deleteSpecifiedSizeFiles && fileSize < rule.deleteSizeLimitBytes;
+
+          if (rule.flattenToRoot) {
+            if (!shouldAutoDelete && p.equals(p.dirname(path), normalizedRootPath)) {
+              continue;
             }
           }
 
-          if (matched && allowedExtensions.isNotEmpty) {
-            final ext = p.extension(path).toLowerCase();
-            if (!allowedExtensions.contains(ext)) {
-              matched = false;
-            } else {
-              reasons.add('格式匹配: ${ext.replaceFirst('.', '')}');
-            }
-          }
+          bool matched = true;
+          List<String> reasons = [];
 
-          if (matched && rule.nameContains.isNotEmpty) {
-            final matchText = rule.caseSensitive ? rule.nameContains : rule.nameContains.toLowerCase();
-            final testName = rule.caseSensitive ? name : name.toLowerCase();
-            if (!testName.contains(matchText)) {
-              matched = false;
-            } else {
-              reasons.add('名称包含 "${rule.nameContains}"');
+          if (shouldAutoDelete) {
+            reasons.add('自动删除 (大小 < ${_formatSizeForReason(rule.deleteSizeLimitBytes)})');
+          } else {
+            if (rule.emptyFilesOnly) {
+              if (fileSize > 0) {
+                matched = false;
+              } else {
+                reasons.add('空文件');
+              }
             }
-          }
 
-          if (matched && rule.sizeCondition != SizeCondition.any) {
-            switch (rule.sizeCondition) {
-              case SizeCondition.greaterThan:
-                if (fileSize <= rule.sizeValueBytes) matched = false;
-                break;
-              case SizeCondition.lessThan:
-                if (fileSize >= rule.sizeValueBytes) matched = false;
-                break;
-              case SizeCondition.equalTo:
-                if (fileSize != rule.sizeValueBytes) matched = false;
-                break;
-              default:
-                break;
+            if (matched && allowedExtensions.isNotEmpty) {
+              final ext = p.extension(path).toLowerCase();
+              if (!allowedExtensions.contains(ext)) {
+                matched = false;
+              } else {
+                reasons.add('格式匹配: ${ext.replaceFirst('.', '')}');
+              }
             }
-            if (matched) {
-              reasons.add('大小匹配');
-            }
-          }
 
-          if (matched && rule.timeCondition != TimeCondition.any) {
-            if (rule.timeCondition == TimeCondition.beforeDate && rule.timeDate != null) {
-              if (!modified.isBefore(rule.timeDate!)) matched = false;
-            } else if (rule.timeCondition == TimeCondition.afterDate && rule.timeDate != null) {
-              if (!modified.isAfter(rule.timeDate!)) matched = false;
-            } else if (rule.timeCondition == TimeCondition.olderThanDays) {
-              final cutoff = DateTime.now().subtract(Duration(days: rule.timeDays));
-              if (!modified.isBefore(cutoff)) matched = false;
+            if (matched && rule.nameContains.isNotEmpty) {
+              final matchText = rule.caseSensitive ? rule.nameContains : rule.nameContains.toLowerCase();
+              final testName = rule.caseSensitive ? name : name.toLowerCase();
+              if (!testName.contains(matchText)) {
+                matched = false;
+              } else {
+                reasons.add('名称包含 "${rule.nameContains}"');
+              }
             }
-            if (matched) {
-              reasons.add('时间匹配');
+
+            if (matched && rule.sizeCondition != SizeCondition.any) {
+              switch (rule.sizeCondition) {
+                case SizeCondition.greaterThan:
+                  if (fileSize <= rule.sizeValueBytes) matched = false;
+                  break;
+                case SizeCondition.lessThan:
+                  if (fileSize >= rule.sizeValueBytes) matched = false;
+                  break;
+                case SizeCondition.equalTo:
+                  if (fileSize != rule.sizeValueBytes) matched = false;
+                  break;
+                default:
+                  break;
+              }
+              if (matched) {
+                reasons.add('大小匹配');
+              }
+            }
+
+            if (matched && rule.timeCondition != TimeCondition.any) {
+              if (rule.timeCondition == TimeCondition.beforeDate && rule.timeDate != null) {
+                if (!modified.isBefore(rule.timeDate!)) matched = false;
+              } else if (rule.timeCondition == TimeCondition.afterDate && rule.timeDate != null) {
+                if (!modified.isAfter(rule.timeDate!)) matched = false;
+              } else if (rule.timeCondition == TimeCondition.olderThanDays) {
+                final cutoff = DateTime.now().subtract(Duration(days: rule.timeDays));
+                if (!modified.isBefore(cutoff)) matched = false;
+              }
+              if (matched) {
+                reasons.add('时间匹配');
+              }
             }
           }
 
@@ -655,12 +688,18 @@ class MoveLogic {
             );
 
             if (rule.targetHash.trim().isNotEmpty) {
-              if (rule.targetHashSize == null || fileSize == rule.targetHashSize) {
+              if (shouldAutoDelete) {
+                items.add(item);
+              } else if (rule.targetHashSize == null || fileSize == rule.targetHashSize) {
                 pendingHashFilterItems.add(item);
               }
             } else {
               if (rule.duplicateFilesOnly) {
-                candidateFiles.add(item);
+                if (shouldAutoDelete) {
+                  items.add(item);
+                } else {
+                  candidateFiles.add(item);
+                }
               } else {
                 if (reasons.isEmpty) {
                   item.matchReason = '文件对象';
@@ -828,6 +867,14 @@ class MoveLogic {
     return items;
   }
 
+  static String _formatSizeForReason(int bytes) {
+    if (bytes <= 0) return '0 B';
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
   /// Execute the batch move
   static Future<void> executeMove(
     List<MoveItem> items, {
@@ -839,11 +886,14 @@ class MoveLogic {
     required void Function() onAllComplete,
   }) async {
     if (items.isEmpty) {
+      if (rule.flattenToRoot) {
+        await _deleteEmptySubfolders(rootPath);
+      }
       onAllComplete();
       return;
     }
 
-    final targetRoot = Directory(targetDirPath);
+    final targetRoot = rule.flattenToRoot ? Directory(rootPath) : Directory(targetDirPath);
     if (!await targetRoot.exists()) {
       await targetRoot.create(recursive: true);
     }
@@ -857,22 +907,33 @@ class MoveLogic {
 
       try {
         if (await item.entity.exists()) {
-          String finalTargetPath;
-          if (rule.keepStructure) {
-            final relativePath = p.relative(item.path, from: rootPath);
-            finalTargetPath = p.join(targetDirPath, relativePath);
-          } else {
-            finalTargetPath = p.join(targetDirPath, item.name);
-          }
+          final bool shouldAutoDelete = !item.isDirectory &&
+              rule.deleteSpecifiedSizeFiles &&
+              item.size < rule.deleteSizeLimitBytes;
 
-          item.targetPath = finalTargetPath;
-
-          if (item.isDirectory) {
-            await _moveDirectory(item.entity as Directory, finalTargetPath, strategy);
+          if (shouldAutoDelete) {
+            await item.entity.delete();
+            item.isMoved = true;
           } else {
-            await _moveFile(item.entity as File, finalTargetPath, strategy);
+            String finalTargetPath;
+            if (rule.flattenToRoot) {
+              finalTargetPath = p.join(rootPath, item.name);
+            } else if (rule.keepStructure) {
+              final relativePath = p.relative(item.path, from: rootPath);
+              finalTargetPath = p.join(targetDirPath, relativePath);
+            } else {
+              finalTargetPath = p.join(targetDirPath, item.name);
+            }
+
+            item.targetPath = finalTargetPath;
+
+            if (item.isDirectory) {
+              await _moveDirectory(item.entity as Directory, finalTargetPath, strategy);
+            } else {
+              await _moveFile(item.entity as File, finalTargetPath, strategy);
+            }
+            item.isMoved = true;
           }
-          item.isMoved = true;
         } else {
           item.isMoved = false;
           item.error = '源文件不存在';
@@ -885,7 +946,33 @@ class MoveLogic {
       onItemComplete(i, (i + 1) / items.length, item);
     }
 
+    if (rule.flattenToRoot) {
+      try {
+        await _deleteEmptySubfolders(rootPath);
+      } catch (e) {
+        debugPrint('Error deleting empty subfolders: $e');
+      }
+    }
+
     onAllComplete();
+  }
+
+  static Future<void> _deleteEmptySubfolders(String path) async {
+    final dir = Directory(path);
+    if (!await dir.exists()) return;
+    
+    await for (final entity in dir.list(recursive: false, followLinks: false)) {
+      if (entity is Directory) {
+        await _deleteEmptySubfolders(entity.path);
+        if (await isDirectoryEmpty(entity)) {
+          try {
+            await entity.delete();
+          } catch (e) {
+            debugPrint('Failed to delete empty folder ${entity.path}: $e');
+          }
+        }
+      }
+    }
   }
 
   static Future<void> _moveFile(File file, String targetPath, ConflictStrategy strategy) async {

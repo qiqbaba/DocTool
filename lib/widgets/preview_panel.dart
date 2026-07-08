@@ -28,6 +28,49 @@ class _PreviewPanelState extends State<PreviewPanel> {
   int _successCount = 0;
   int _failCount = 0;
 
+  int _sortColumnIndex = -1;
+  bool _sortAscending = true;
+
+  Widget _buildSortableHeader(String title, int columnIndex) {
+    final isSelected = _sortColumnIndex == columnIndex;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          if (_sortColumnIndex == columnIndex) {
+            if (_sortAscending) {
+              _sortAscending = false;
+            } else {
+              _sortColumnIndex = -1;
+            }
+          } else {
+            _sortColumnIndex = columnIndex;
+            _sortAscending = true;
+          }
+        });
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? Colors.indigoAccent : Colors.grey,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            isSelected
+                ? (_sortAscending ? Icons.arrow_drop_up : Icons.arrow_drop_down)
+                : Icons.sort,
+            size: 16,
+            color: isSelected ? Colors.indigoAccent : Colors.grey[600],
+          ),
+        ],
+      ),
+    );
+  }
+
   // Validation Cache: map of final path -> count of items proposing this path
   final Map<String, int> _pathCollisionMap = {};
 
@@ -138,6 +181,21 @@ class _PreviewPanelState extends State<PreviewPanel> {
   @override
   Widget build(BuildContext context) {
     final changedCount = widget.items.where((item) => item.newName != item.baseName && _getItemValidationError(item) == null).length;
+
+    List<RenameItem> sortedItems = List.from(widget.items);
+    if (_sortColumnIndex == 0) {
+      sortedItems.sort((a, b) {
+        int cmp = a.currentName.toLowerCase().compareTo(b.currentName.toLowerCase());
+        return _sortAscending ? cmp : -cmp;
+      });
+    } else if (_sortColumnIndex == 1) {
+      sortedItems.sort((a, b) {
+        final aDisplay = a.isDirectory ? a.newName : (a.newName + a.extension);
+        final bDisplay = b.isDirectory ? b.newName : (b.newName + b.extension);
+        int cmp = aDisplay.toLowerCase().compareTo(bDisplay.toLowerCase());
+        return _sortAscending ? cmp : -cmp;
+      });
+    }
 
     return Card(
       color: const Color(0xFF16161A),
@@ -252,12 +310,12 @@ class _PreviewPanelState extends State<PreviewPanel> {
                 color: Color(0xFF1E1E22),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Expanded(child: Text('原名称', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))),
-                  Icon(Icons.arrow_forward, size: 16, color: Colors.grey),
-                  SizedBox(width: 8),
-                  Expanded(child: Text('新名称', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))),
+                  Expanded(child: _buildSortableHeader('原名称', 0)),
+                  const Icon(Icons.arrow_forward, size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildSortableHeader('新名称', 1)),
                 ],
               ),
             ),
@@ -276,10 +334,10 @@ class _PreviewPanelState extends State<PreviewPanel> {
                             borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
                           ),
                           child: ListView.separated(
-                            itemCount: widget.items.length,
+                            itemCount: sortedItems.length,
                             separatorBuilder: (context, index) => const Divider(color: Color(0xFF232329), height: 1),
                             itemBuilder: (context, index) {
-                              final item = widget.items[index];
+                              final item = sortedItems[index];
                               final validationError = _getItemValidationError(item);
                               final hasChanged = item.newName != item.baseName;
                               

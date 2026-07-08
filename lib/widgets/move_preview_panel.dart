@@ -42,6 +42,50 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
   int _successCount = 0;
   int _failCount = 0;
 
+  int _sortColumnIndex = -1;
+  bool _sortAscending = true;
+
+  Widget _buildSortableHeader(String title, int columnIndex) {
+    final isSelected = _sortColumnIndex == columnIndex;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          if (_sortColumnIndex == columnIndex) {
+            if (_sortAscending) {
+              _sortAscending = false;
+            } else {
+              _sortColumnIndex = -1;
+            }
+          } else {
+            _sortColumnIndex = columnIndex;
+            _sortAscending = true;
+          }
+        });
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? Colors.orangeAccent : Colors.grey,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            isSelected
+                ? (_sortAscending ? Icons.arrow_drop_up : Icons.arrow_drop_down)
+                : Icons.sort,
+            size: 16,
+            color: isSelected ? Colors.orangeAccent : Colors.grey[600],
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatSize(int bytes) {
     if (bytes <= 0) return '0 B';
     if (bytes < 1024) return '$bytes B';
@@ -72,7 +116,7 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
 
   Future<void> _startMoveProcess() async {
     // 1. Verify target directory path
-    if (widget.targetDirPath.isEmpty) {
+    if (widget.targetDirPath.isEmpty && !widget.rule.flattenToRoot) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('请先选择移动的目标文件夹！'),
@@ -83,7 +127,11 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
     }
 
     // 2. Prevent moving source to a subfolder inside itself (infinite loops)
-    if (p.isWithin(widget.sourceDirPath, widget.targetDirPath) || p.equals(widget.sourceDirPath, widget.targetDirPath)) {
+    final bool isLoopConflict = widget.rule.flattenToRoot
+        ? p.isWithin(widget.sourceDirPath, widget.targetDirPath)
+        : (p.isWithin(widget.sourceDirPath, widget.targetDirPath) || p.equals(widget.sourceDirPath, widget.targetDirPath));
+
+    if (isLoopConflict) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -96,7 +144,7 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
             ],
           ),
           content: const Text(
-            '目标文件夹不能是源文件夹本身或其子文件夹，否则会导致文件循环搬移与结构损坏！请选择其他独立的目标路径。',
+            '目标文件夹不能是源文件夹的子文件夹，否则会导致文件循环搬移与结构损坏！请选择其他独立的目标路径。',
             style: TextStyle(color: Colors.grey),
           ),
           actions: [
@@ -132,7 +180,9 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '您即将移动 ${selectedItems.length} 个项目。\n总大小约为: ${_formatSize(_selectedSizeSum)}。',
+                widget.rule.flattenToRoot
+                    ? '您即将将子孙文件夹中的 ${selectedItems.length} 个文件拍平移动到根目录，并删除所有空子文件夹。\n总大小约为: ${_formatSize(_selectedSizeSum)}。'
+                    : '您即将移动 ${selectedItems.length} 个项目。\n总大小约为: ${_formatSize(_selectedSizeSum)}。',
                 style: const TextStyle(color: Colors.white, fontSize: 14),
               ),
               const SizedBox(height: 12),
@@ -140,15 +190,19 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                 '源目录:\n${widget.sourceDirPath}',
                 style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
-              const SizedBox(height: 8),
-              Text(
-                '目标目录:\n${widget.targetDirPath}',
-                style: const TextStyle(color: Colors.orangeAccent, fontSize: 12),
-              ),
+              if (!widget.rule.flattenToRoot) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '目标目录:\n${widget.targetDirPath}',
+                  style: const TextStyle(color: Colors.orangeAccent, fontSize: 12),
+                ),
+              ],
               const SizedBox(height: 12),
-              const Text(
-                '提示：跨分区移动大文件可能需要稍等片刻，此时会采用后台复制并删除源文件的Fallback方案。',
-                style: TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic),
+              Text(
+                widget.rule.flattenToRoot
+                    ? '提示：移动完成后，所有空子文件夹将被自动递归清理。'
+                    : '提示：跨分区移动大文件可能需要稍等片刻，此时会采用后台复制并删除源文件的Fallback方案。',
+                style: const TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic),
               ),
             ],
           ),
@@ -236,6 +290,24 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
   Widget build(BuildContext context) {
     final allChecked = widget.items.isNotEmpty && widget.items.every((item) => item.isSelected);
     final someChecked = widget.items.any((item) => item.isSelected) && !allChecked;
+
+    List<MoveItem> sortedItems = List.from(widget.items);
+    if (_sortColumnIndex == 0) {
+      sortedItems.sort((a, b) {
+        int cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        return _sortAscending ? cmp : -cmp;
+      });
+    } else if (_sortColumnIndex == 1) {
+      sortedItems.sort((a, b) {
+        int cmp = a.matchReason.toLowerCase().compareTo(b.matchReason.toLowerCase());
+        return _sortAscending ? cmp : -cmp;
+      });
+    } else if (_sortColumnIndex == 2) {
+      sortedItems.sort((a, b) {
+        int cmp = a.size.compareTo(b.size);
+        return _sortAscending ? cmp : -cmp;
+      });
+    }
 
     return Card(
       color: const Color(0xFF16161A),
@@ -365,17 +437,17 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                     },
                   ),
                   const SizedBox(width: 4),
-                  const Expanded(
+                  Expanded(
                     flex: 5,
-                    child: Text('项目名称', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
+                    child: _buildSortableHeader('项目名称', 0),
                   ),
-                  const Expanded(
+                  Expanded(
                     flex: 3,
-                    child: Text('匹配条件/类型', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
+                    child: _buildSortableHeader('匹配条件/类型', 1),
                   ),
-                  const Expanded(
+                  Expanded(
                     flex: 2,
-                    child: Text('大小', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
+                    child: _buildSortableHeader('大小', 2),
                   ),
                 ],
               ),
@@ -447,10 +519,10 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                             borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
                           ),
                           child: ListView.separated(
-                            itemCount: widget.items.length,
+                            itemCount: sortedItems.length,
                             separatorBuilder: (context, index) => const Divider(color: Color(0xFF232329), height: 1),
                             itemBuilder: (context, index) {
-                              final item = widget.items[index];
+                              final item = sortedItems[index];
                               
                               IconData iconData = Icons.insert_drive_file;
                               Color iconColor = Colors.grey;
@@ -461,7 +533,15 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
 
                               // Calculate planned move path description
                               String planDestPath = '';
-                              if (widget.targetDirPath.isNotEmpty) {
+                              final bool isAutoDelete = !item.isDirectory &&
+                                  widget.rule.deleteSpecifiedSizeFiles &&
+                                  item.size < widget.rule.deleteSizeLimitBytes;
+
+                              if (isAutoDelete) {
+                                planDestPath = '[自动删除]';
+                              } else if (widget.rule.flattenToRoot) {
+                                planDestPath = p.join(widget.sourceDirPath, item.name);
+                              } else if (widget.targetDirPath.isNotEmpty) {
                                 if (widget.rule.keepStructure) {
                                   final rel = p.relative(item.path, from: widget.sourceDirPath);
                                   planDestPath = p.join(widget.targetDirPath, rel);
@@ -531,14 +611,30 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                                             const SizedBox(height: 2),
                                             Row(
                                               children: [
-                                                const Icon(Icons.subdirectory_arrow_right, color: Colors.orangeAccent, size: 11),
+                                                Icon(
+                                                  planDestPath == '[自动删除]'
+                                                      ? Icons.delete_forever
+                                                      : Icons.subdirectory_arrow_right,
+                                                  color: planDestPath == '[自动删除]'
+                                                      ? Colors.redAccent
+                                                      : Colors.orangeAccent,
+                                                  size: 11,
+                                                ),
                                                 const SizedBox(width: 4),
                                                 Expanded(
                                                   child: Tooltip(
-                                                    message: '移动至: $planDestPath',
+                                                    message: planDestPath == '[自动删除]' ? '此小文件将被自动删除' : '移动至: $planDestPath',
                                                     child: Text(
-                                                      '移动至: $planDestPath',
-                                                      style: const TextStyle(color: Colors.orangeAccent, fontSize: 11),
+                                                      planDestPath == '[自动删除]' ? '将自动直接删除' : '移动至: $planDestPath',
+                                                      style: TextStyle(
+                                                        color: planDestPath == '[自动删除]'
+                                                            ? Colors.redAccent
+                                                            : Colors.orangeAccent,
+                                                        fontSize: 11,
+                                                        fontWeight: planDestPath == '[自动删除]'
+                                                            ? FontWeight.bold
+                                                            : FontWeight.normal,
+                                                      ),
                                                       maxLines: 1,
                                                       overflow: TextOverflow.ellipsis,
                                                     ),

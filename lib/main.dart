@@ -135,6 +135,9 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
       if (path != null && path.isNotEmpty) {
         setState(() {
           _selectedDirPath = path;
+          if (_currentTab == 2 && _moveRule.flattenToRoot) {
+            _targetDirPath = path;
+          }
         });
       }
     } else {
@@ -146,6 +149,9 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
       if (path != null && path.isNotEmpty) {
         setState(() {
           _selectedDirPath = path;
+          if (_currentTab == 2 && _moveRule.flattenToRoot) {
+            _targetDirPath = path;
+          }
         });
       }
     }
@@ -322,8 +328,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
   ) {
     setState(() {
       _moveRule = rule;
-      _moveRecursive = recursive;
-      _targetDirPath = targetDirPath;
+      _moveRecursive = rule.flattenToRoot ? true : recursive;
+      _targetDirPath = rule.flattenToRoot ? _selectedDirPath : targetDirPath;
       _conflictStrategy = strategy;
     });
   }

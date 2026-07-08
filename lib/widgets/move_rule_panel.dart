@@ -36,8 +36,10 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
   final TextEditingController _sizeValueController = TextEditingController();
   final TextEditingController _hashController = TextEditingController();
   final TextEditingController _timeDaysController = TextEditingController();
+  final TextEditingController _deleteSizeController = TextEditingController();
 
   SizeUnit _selectedSizeUnit = SizeUnit.kb;
+  SizeUnit _deleteSizeUnit = SizeUnit.kb;
   bool _isCalculatingMd5 = false;
 
   @override
@@ -72,6 +74,18 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
       }
     }
 
+    final limit = _rule.deleteSizeLimitBytes;
+    if (limit >= 1024 * 1024 && limit % (1024 * 1024) == 0) {
+      _deleteSizeController.text = (limit / (1024 * 1024)).toStringAsFixed(0);
+      _deleteSizeUnit = SizeUnit.mb;
+    } else if (limit >= 1024 && limit % 1024 == 0) {
+      _deleteSizeController.text = (limit / 1024).toStringAsFixed(0);
+      _deleteSizeUnit = SizeUnit.kb;
+    } else {
+      _deleteSizeController.text = limit.toString();
+      _deleteSizeUnit = SizeUnit.b;
+    }
+
     _hashController.text = _rule.targetHash;
     _timeDaysController.text = _rule.timeDays.toString();
 
@@ -86,6 +100,9 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
     });
     _sizeValueController.addListener(() {
       _updateSizeBytes();
+    });
+    _deleteSizeController.addListener(() {
+      _updateDeleteSizeBytes();
     });
     _hashController.addListener(() {
       final text = _hashController.text.trim();
@@ -111,6 +128,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
     _sizeValueController.dispose();
     _hashController.dispose();
     _timeDaysController.dispose();
+    _deleteSizeController.dispose();
     super.dispose();
   }
 
@@ -180,6 +198,27 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
     _triggerChanged();
   }
 
+  void _updateDeleteSizeBytes() {
+    final val = double.tryParse(_deleteSizeController.text) ?? 0.0;
+    int bytes = 0;
+    switch (_deleteSizeUnit) {
+      case SizeUnit.b:
+        bytes = val.round();
+        break;
+      case SizeUnit.kb:
+        bytes = (val * 1024).round();
+        break;
+      case SizeUnit.mb:
+        bytes = (val * 1024 * 1024).round();
+        break;
+      case SizeUnit.gb:
+        bytes = (val * 1024 * 1024 * 1024).round();
+        break;
+    }
+    _rule = _rule.copyWith(deleteSizeLimitBytes: bytes);
+    _triggerChanged();
+  }
+
   Future<void> _selectTargetDirectory() async {
     final path = await FilePicker.platform.getDirectoryPath(
       dialogTitle: '选择移动的目标文件夹',
@@ -232,47 +271,92 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '移动目标目录',
+                  '移动目标目录与模式',
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
                 const SizedBox(height: 12),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E1E22),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFF2C2C35)),
-                        ),
-                        child: Text(
-                          _targetDirPath.isEmpty ? '未选择目标文件夹，请点击右侧选择' : _targetDirPath,
-                          style: TextStyle(
-                            color: _targetDirPath.isEmpty ? Colors.grey : Colors.orangeAccent,
-                            fontSize: 13,
-                            fontFamily: 'monospace',
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '扁平化子孙文件到根目录并清理空文件夹',
+                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                          SizedBox(height: 2),
+                          Text(
+                            '将子孙文件夹中的所有文件移动到源目录根路径，并删除空文件夹',
+                            style: TextStyle(color: Colors.grey, fontSize: 11),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: _selectTargetDirectory,
-                      icon: const Icon(Icons.folder_open, size: 18),
-                      label: const Text('选择'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orangeAccent,
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
+                    Switch(
+                      value: _rule.flattenToRoot,
+                      onChanged: (val) {
+                        setState(() {
+                          _rule = _rule.copyWith(
+                            flattenToRoot: val,
+                            target: val ? MoveTarget.file : _rule.target,
+                            keepStructure: val ? false : _rule.keepStructure,
+                          );
+                          _triggerChanged();
+                        });
+                      },
+                      activeColor: Colors.orangeAccent,
                     ),
                   ],
+                ),
+                const Divider(color: Color(0xFF232329), height: 24),
+                Opacity(
+                  opacity: _rule.flattenToRoot ? 0.5 : 1.0,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E1E22),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF2C2C35)),
+                          ),
+                          child: Text(
+                            _rule.flattenToRoot
+                                ? '扁平化模式：已自动设定目标目录为源目录'
+                                : (_targetDirPath.isEmpty ? '未选择目标文件夹，请点击右侧选择' : _targetDirPath),
+                            style: TextStyle(
+                              color: _rule.flattenToRoot
+                                  ? Colors.grey
+                                  : (_targetDirPath.isEmpty ? Colors.grey : Colors.orangeAccent),
+                              fontSize: 13,
+                              fontFamily: 'monospace',
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: _rule.flattenToRoot ? null : _selectTargetDirectory,
+                        icon: const Icon(Icons.folder_open, size: 18),
+                        label: const Text('选择'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orangeAccent,
+                          foregroundColor: Colors.black,
+                          disabledBackgroundColor: Colors.grey[800],
+                          disabledForegroundColor: Colors.grey[600],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -299,83 +383,93 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                 const SizedBox(height: 12),
 
                 // Object Type selection
-                Row(
-                  children: [
-                    const Text('移动目标:', style: TextStyle(color: Colors.grey)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: SegmentedButton<MoveTarget>(
-                        segments: const [
-                          ButtonSegment<MoveTarget>(
-                            value: MoveTarget.file,
-                            label: Text('文件'),
-                            icon: Icon(Icons.insert_drive_file, size: 16),
+                Opacity(
+                  opacity: _rule.flattenToRoot ? 0.5 : 1.0,
+                  child: Row(
+                    children: [
+                      const Text('移动目标:', style: TextStyle(color: Colors.grey)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SegmentedButton<MoveTarget>(
+                          segments: const [
+                            ButtonSegment<MoveTarget>(
+                              value: MoveTarget.file,
+                              label: Text('文件'),
+                              icon: Icon(Icons.insert_drive_file, size: 16),
+                            ),
+                            ButtonSegment<MoveTarget>(
+                              value: MoveTarget.folder,
+                              label: Text('文件夹'),
+                              icon: Icon(Icons.folder, size: 16),
+                            ),
+                            ButtonSegment<MoveTarget>(
+                              value: MoveTarget.both,
+                              label: Text('全部'),
+                              icon: Icon(Icons.all_inclusive, size: 16),
+                            ),
+                          ],
+                          selected: {_rule.target},
+                          onSelectionChanged: _rule.flattenToRoot
+                              ? null
+                              : (newSelection) {
+                                  setState(() {
+                                    bool dup = _rule.duplicateFilesOnly;
+                                    if (newSelection.first == MoveTarget.folder) {
+                                      dup = false;
+                                    }
+                                    _rule = _rule.copyWith(
+                                      target: newSelection.first,
+                                      duplicateFilesOnly: dup,
+                                    );
+                                    _triggerChanged();
+                                  });
+                                },
+                          style: ButtonStyle(
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                              if (states.contains(WidgetState.selected)) {
+                                return Colors.orange.withOpacity(0.2);
+                              }
+                              return null;
+                            }),
+                            foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                              if (states.contains(WidgetState.selected)) {
+                                return Colors.orangeAccent;
+                              }
+                              return null;
+                            }),
                           ),
-                          ButtonSegment<MoveTarget>(
-                            value: MoveTarget.folder,
-                            label: Text('文件夹'),
-                            icon: Icon(Icons.folder, size: 16),
-                          ),
-                          ButtonSegment<MoveTarget>(
-                            value: MoveTarget.both,
-                            label: Text('全部'),
-                            icon: Icon(Icons.all_inclusive, size: 16),
-                          ),
-                        ],
-                        selected: {_rule.target},
-                        onSelectionChanged: (newSelection) {
-                          setState(() {
-                            bool dup = _rule.duplicateFilesOnly;
-                            if (newSelection.first == MoveTarget.folder) {
-                              dup = false;
-                            }
-                            _rule = _rule.copyWith(
-                              target: newSelection.first,
-                              duplicateFilesOnly: dup,
-                            );
-                            _triggerChanged();
-                          });
-                        },
-                        style: ButtonStyle(
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-                            if (states.contains(WidgetState.selected)) {
-                              return Colors.orange.withOpacity(0.2);
-                            }
-                            return null;
-                          }),
-                          foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-                            if (states.contains(WidgetState.selected)) {
-                              return Colors.orangeAccent;
-                            }
-                            return null;
-                          }),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
 
                 // Recursive Scan switch
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      '包含子文件夹 (递归扫描)',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    Switch(
-                      value: _recursive,
-                      onChanged: (val) {
-                        setState(() {
-                          _recursive = val;
-                          _triggerChanged();
-                        });
-                      },
-                      activeColor: Colors.orangeAccent,
-                    ),
-                  ],
+                Opacity(
+                  opacity: _rule.flattenToRoot ? 0.5 : 1.0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        '包含子文件夹 (递归扫描)',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      Switch(
+                        value: _rule.flattenToRoot ? true : _recursive,
+                        onChanged: _rule.flattenToRoot
+                            ? null
+                            : (val) {
+                                setState(() {
+                                  _recursive = val;
+                                  _triggerChanged();
+                                });
+                              },
+                        activeColor: Colors.orangeAccent,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -444,35 +538,40 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                 const SizedBox(height: 12),
 
                 // Keep Structure option
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '保持源文件夹目录结构',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                          Text(
-                            '开启则按源相对层级移动；关闭则把文件拍平移动到目标根目录',
-                            style: TextStyle(color: Colors.grey, fontSize: 11),
-                          ),
-                        ],
+                Opacity(
+                  opacity: _rule.flattenToRoot ? 0.5 : 1.0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '保持源文件夹目录结构',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            Text(
+                              '开启则按源相对层级移动；关闭则把文件拍平移动到目标根目录',
+                              style: TextStyle(color: Colors.grey, fontSize: 11),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Switch(
-                      value: _rule.keepStructure,
-                      onChanged: (val) {
-                        setState(() {
-                          _rule = _rule.copyWith(keepStructure: val);
-                          _triggerChanged();
-                        });
-                      },
-                      activeColor: Colors.orangeAccent,
-                    ),
-                  ],
+                      Switch(
+                        value: _rule.flattenToRoot ? false : _rule.keepStructure,
+                        onChanged: _rule.flattenToRoot
+                            ? null
+                            : (val) {
+                                setState(() {
+                                  _rule = _rule.copyWith(keepStructure: val);
+                                  _triggerChanged();
+                                });
+                              },
+                        activeColor: Colors.orangeAccent,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -765,6 +864,66 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                     controlAffinity: ListTileControlAffinity.leading,
                     dense: true,
                   ),
+                CheckboxListTile(
+                  title: const Text('移动时自动删除指定大小的小垃圾文件', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  subtitle: const Text('符合设定大小的小文件在移动时会被直接删除而不搬移', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                  value: _rule.deleteSpecifiedSizeFiles,
+                  activeColor: Colors.orangeAccent,
+                  onChanged: (val) {
+                    setState(() {
+                      _rule = _rule.copyWith(deleteSpecifiedSizeFiles: val ?? false);
+                      _triggerChanged();
+                    });
+                  },
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  dense: true,
+                ),
+                if (_rule.deleteSpecifiedSizeFiles) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Text('大小限值: 小于 ', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 3,
+                        child: TextField(
+                          controller: _deleteSizeController,
+                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                          decoration: _buildInputDecoration('数值'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: DropdownButtonFormField<SizeUnit>(
+                          value: _deleteSizeUnit,
+                          dropdownColor: const Color(0xFF1E1E22),
+                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          decoration: const InputDecoration(
+                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            border: OutlineInputBorder(),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: SizeUnit.b, child: Text('B')),
+                            DropdownMenuItem(value: SizeUnit.kb, child: Text('KB')),
+                            DropdownMenuItem(value: SizeUnit.mb, child: Text('MB')),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _deleteSizeUnit = val;
+                                _updateDeleteSizeBytes();
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
