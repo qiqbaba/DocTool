@@ -113,7 +113,8 @@ class FileHelper {
   /// Scan directory for files or folders
   static Future<List<RenameItem>> scanDirectory({
     required String rootPath,
-    required bool isFileTarget,
+    required bool isTargetFile,
+    required bool isTargetFolder,
     required bool recursive,
     required String extensionFilter, // comma-separated e.g. "mp4, txt" or "*" for all
   }) async {
@@ -125,7 +126,7 @@ class FileHelper {
 
     // Process extension filter
     List<String> allowedExtensions = [];
-    if (isFileTarget && extensionFilter.trim().isNotEmpty && extensionFilter.trim() != '*') {
+    if (isTargetFile && extensionFilter.trim().isNotEmpty && extensionFilter.trim() != '*') {
       allowedExtensions = extensionFilter
           .split(',')
           .map((ext) {
@@ -148,7 +149,7 @@ class FileHelper {
         
         final isDir = entity is Directory;
         
-        if (isFileTarget && entity is File) {
+        if (isTargetFile && entity is File) {
           final ext = p.extension(path);
           final base = p.basenameWithoutExtension(path);
           
@@ -172,7 +173,7 @@ class FileHelper {
             parentDirName: parentDirName,
             isDirectory: false,
           ));
-        } else if (!isFileTarget && isDir) {
+        } else if (isTargetFolder && isDir) {
           // Folder rename. Make sure we don't rename the root folder itself!
           if (p.equals(path, rootPath)) {
             continue;
@@ -197,13 +198,13 @@ class FileHelper {
       debugPrint('Scan error: $e');
     }
 
-    // Sort items by depth (descending) if we are doing recursive directory renaming
+    // Sort items by depth (descending) if we are doing recursive renaming and folders are involved
     // to avoid renaming parent directories before their children.
-    if (!isFileTarget && recursive) {
+    if (isTargetFolder && recursive) {
       items.sort((a, b) {
         final aParts = p.split(a.currentPath).length;
         final bParts = p.split(b.currentPath).length;
-        return bParts.compareTo(aParts); // deeper directories first
+        return bParts.compareTo(aParts); // deeper items first
       });
     }
 

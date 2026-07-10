@@ -139,7 +139,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
 
   // --- Rename States ---
   RenameRule _renameRule = RenameRule();
-  bool _isFileTarget = true;
+  bool _isTargetFile = true;
+  bool _isTargetFolder = false;
   bool _recursive = false;
   String _extensionFilter = '';
   bool _isScanning = false;
@@ -344,7 +345,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
 
     final items = await FileHelper.scanDirectory(
       rootPath: _selectedDirPath,
-      isFileTarget: _isFileTarget,
+      isTargetFile: _isTargetFile,
+      isTargetFolder: _isTargetFolder,
       recursive: _recursive,
       extensionFilter: _extensionFilter,
     );
@@ -373,13 +375,15 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
   /// Re-apply rules whenever configuration panel outputs changes
   void _onRulePanelChanged(
     RenameRule rule,
-    bool isFileTarget,
+    bool isTargetFile,
+    bool isTargetFolder,
     bool recursive,
     String extensionFilter,
   ) {
     setState(() {
       _renameRule = rule;
-      _isFileTarget = isFileTarget;
+      _isTargetFile = isTargetFile;
+      _isTargetFolder = isTargetFolder;
       _recursive = recursive;
       _extensionFilter = extensionFilter;
     });
@@ -527,48 +531,57 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
           ? _buildMobileView()
           : Row(
               children: [
-                NavigationRail(
-                  backgroundColor: context.cardBg,
-                  selectedIndex: _currentTab,
-                  onDestinationSelected: (int index) {
-                    setState(() {
-                      _currentTab = index;
-                    });
-                  },
-                  labelType: NavigationRailLabelType.all,
-                  selectedLabelTextStyle: TextStyle(
-                    color: activeColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  unselectedLabelTextStyle: TextStyle(color: context.textColorSecondary),
-                  selectedIconTheme: IconThemeData(
-                    color: activeColor,
-                  ),
-                  unselectedIconTheme: IconThemeData(color: context.textColorSecondary),
-                  destinations: const [
-                    NavigationRailDestination(
-                      icon: Icon(Icons.auto_fix_high),
-                      label: Text('批量重命名'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.delete_sweep),
-                      label: Text('批量删除'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.drive_file_move),
-                      label: Text('批量移动'),
-                    ),
-                  ],
-                  trailing: Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: IconButton(
-                      onPressed: _showSettingsDialog,
-                      icon: const Icon(Icons.settings, size: 24),
-                      tooltip: '主题设置',
-                      style: IconButton.styleFrom(
-                        foregroundColor: context.textColorSecondary,
+                Container(
+                  color: context.cardBg,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: NavigationRail(
+                          backgroundColor: Colors.transparent,
+                          selectedIndex: _currentTab,
+                          onDestinationSelected: (int index) {
+                            setState(() {
+                              _currentTab = index;
+                            });
+                          },
+                          labelType: NavigationRailLabelType.all,
+                          selectedLabelTextStyle: TextStyle(
+                            color: activeColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          unselectedLabelTextStyle: TextStyle(color: context.textColorSecondary),
+                          selectedIconTheme: IconThemeData(
+                            color: activeColor,
+                          ),
+                          unselectedIconTheme: IconThemeData(color: context.textColorSecondary),
+                          destinations: const [
+                            NavigationRailDestination(
+                              icon: Icon(Icons.auto_fix_high),
+                              label: Text('批量重命名'),
+                            ),
+                            NavigationRailDestination(
+                              icon: Icon(Icons.delete_sweep),
+                              label: Text('批量删除'),
+                            ),
+                            NavigationRailDestination(
+                              icon: Icon(Icons.drive_file_move),
+                              label: Text('批量移动'),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: IconButton(
+                          onPressed: _showSettingsDialog,
+                          icon: const Icon(Icons.settings, size: 24),
+                          tooltip: '主题设置',
+                          style: IconButton.styleFrom(
+                            foregroundColor: context.textColorSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 VerticalDivider(thickness: 1, width: 1, color: context.borderColor),
@@ -634,7 +647,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                   const SizedBox(height: 12),
                   RenameRulePanel(
                     initialRule: _renameRule,
-                    initialIsFileTarget: _isFileTarget,
+                    initialIsTargetFile: _isTargetFile,
+                    initialIsTargetFolder: _isTargetFolder,
                     initialRecursive: _recursive,
                     initialExtensionFilter: _extensionFilter,
                     onChanged: _onRulePanelChanged,
@@ -809,7 +823,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                 child: SingleChildScrollView(
                   child: RenameRulePanel(
                     initialRule: _renameRule,
-                    initialIsFileTarget: _isFileTarget,
+                    initialIsTargetFile: _isTargetFile,
+                    initialIsTargetFolder: _isTargetFolder,
                     initialRecursive: _recursive,
                     initialExtensionFilter: _extensionFilter,
                     onChanged: _onRulePanelChanged,

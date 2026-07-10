@@ -389,29 +389,6 @@ class _PreviewPanelState extends State<PreviewPanel> {
                                               ),
                                             ),
                                           ),
-                                          const SizedBox(width: 6),
-                                          Tooltip(
-                                            message: '打开文件/文件夹',
-                                            child: InkWell(
-                                              onTap: () => FileHelper.openFileOrFolder(item.currentPath),
-                                              borderRadius: BorderRadius.circular(4),
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(4.0),
-                                                child: Icon(Icons.open_in_new, size: 14, color: context.textColorSecondary),
-                                              ),
-                                            ),
-                                          ),
-                                          Tooltip(
-                                            message: '在文件夹中定位',
-                                            child: InkWell(
-                                              onTap: () => FileHelper.locateInExplorer(item.currentPath),
-                                              borderRadius: BorderRadius.circular(4),
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(4.0),
-                                                child: Icon(Icons.folder_open, size: 14, color: context.textColorSecondary),
-                                              ),
-                                            ),
-                                          ),
                                         ],
                                       ),
                                     ),

@@ -5,12 +5,14 @@ import '../utils/theme_helper.dart';
 
 class RenameRulePanel extends StatefulWidget {
   final RenameRule initialRule;
-  final bool initialIsFileTarget;
+  final bool initialIsTargetFile;
+  final bool initialIsTargetFolder;
   final bool initialRecursive;
   final String initialExtensionFilter;
   final Function(
     RenameRule rule,
-    bool isFileTarget,
+    bool isTargetFile,
+    bool isTargetFolder,
     bool recursive,
     String extensionFilter,
   ) onChanged;
@@ -18,7 +20,8 @@ class RenameRulePanel extends StatefulWidget {
   const RenameRulePanel({
     super.key,
     required this.initialRule,
-    required this.initialIsFileTarget,
+    required this.initialIsTargetFile,
+    required this.initialIsTargetFolder,
     required this.initialRecursive,
     required this.initialExtensionFilter,
     required this.onChanged,
@@ -30,7 +33,8 @@ class RenameRulePanel extends StatefulWidget {
 
 class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProviderStateMixin {
   late RenameRule _rule;
-  late bool _isFileTarget;
+  late bool _isTargetFile;
+  late bool _isTargetFolder;
   late bool _recursive;
   late String _extensionFilter;
 
@@ -55,7 +59,8 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
   void initState() {
     super.initState();
     _rule = widget.initialRule;
-    _isFileTarget = widget.initialIsFileTarget;
+    _isTargetFile = widget.initialIsTargetFile;
+    _isTargetFolder = widget.initialIsTargetFolder;
     _recursive = widget.initialRecursive;
     _extensionFilter = widget.initialExtensionFilter;
 
@@ -186,7 +191,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
   }
 
   void _triggerChanged() {
-    widget.onChanged(_rule, _isFileTarget, _recursive, _extensionFilter);
+    widget.onChanged(_rule, _isTargetFile, _isTargetFolder, _recursive, _extensionFilter);
   }
 
   InputDecoration _buildInputDecoration(String label, {String? hint}) {
@@ -259,23 +264,29 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                     Text('对象类型:', style: TextStyle(color: context.textColorSecondary)),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: SegmentedButton<bool>(
+                      child: SegmentedButton<String>(
+                        multiSelectionEnabled: true,
+                        emptySelectionAllowed: false,
                         segments: const [
-                          ButtonSegment<bool>(
-                            value: true,
+                          ButtonSegment<String>(
+                            value: 'file',
                             label: Text('文件'),
                             icon: Icon(Icons.insert_drive_file),
                           ),
-                          ButtonSegment<bool>(
-                            value: false,
+                          ButtonSegment<String>(
+                            value: 'folder',
                             label: Text('文件夹'),
                             icon: Icon(Icons.folder),
                           ),
                         ],
-                        selected: {_isFileTarget},
+                        selected: {
+                          if (_isTargetFile) 'file',
+                          if (_isTargetFolder) 'folder',
+                        },
                         onSelectionChanged: (newSelection) {
                           setState(() {
-                            _isFileTarget = newSelection.first;
+                            _isTargetFile = newSelection.contains('file');
+                            _isTargetFolder = newSelection.contains('folder');
                             _triggerChanged();
                           });
                         },
@@ -293,7 +304,9 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      _isFileTarget ? '包含子孙文件 (递归)' : '包含子孙文件夹 (递归)',
+                      (_isTargetFile && _isTargetFolder)
+                          ? '包含子孙文件与文件夹 (递归)'
+                          : (_isTargetFile ? '包含子孙文件 (递归)' : '包含子孙文件夹 (递归)'),
                       style: TextStyle(color: context.textColorSecondary),
                     ),
                     Switch(
@@ -310,7 +323,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 ),
                 
                 // Extension filter (Only for files)
-                if (_isFileTarget) ...[
+                if (_isTargetFile) ...[
                   const SizedBox(height: 8),
                   TextField(
                     controller: _extController,
