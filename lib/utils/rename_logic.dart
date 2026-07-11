@@ -1,5 +1,7 @@
 enum InsertPosition { start, end, custom }
 
+enum RenameTarget { file, folder, both }
+
 class InsertRule {
   final bool enabled;
   final String text;
@@ -33,23 +35,24 @@ class InsertRule {
 }
 
 enum DeleteMode { match, rangeEnds, rangeCustom, anchor }
+
 enum DeleteDirection { before, after }
 
 class DeleteRule {
   final bool enabled;
   final DeleteMode mode;
-  
+
   // match mode
   final String matchText;
-  
+
   // rangeEnds mode
   final bool fromStart;
   final int count;
-  
+
   // rangeCustom mode
   final int startIndex;
   final int endIndex;
-  
+
   // anchor mode
   final String anchorChar;
   final DeleteDirection direction;
@@ -150,7 +153,8 @@ class RenameRule {
 }
 
 class RenameLogic {
-  static String applyRules(String originalBaseName, RenameRule rule, {String? parentDirName}) {
+  static String applyRules(String originalBaseName, RenameRule rule,
+      {String? parentDirName}) {
     String name = originalBaseName;
 
     // 1. Apply delete rules
@@ -167,7 +171,9 @@ class RenameLogic {
             if (del.fromStart) {
               name = del.count >= name.length ? '' : name.substring(del.count);
             } else {
-              name = del.count >= name.length ? '' : name.substring(0, name.length - del.count);
+              name = del.count >= name.length
+                  ? ''
+                  : name.substring(0, name.length - del.count);
             }
           }
           break;
@@ -177,7 +183,8 @@ class RenameLogic {
             int end = del.endIndex.clamp(0, name.length);
             if (start <= end) {
               String left = name.substring(0, start);
-              String right = (end + 1 >= name.length) ? '' : name.substring(end + 1);
+              String right =
+                  (end + 1 >= name.length) ? '' : name.substring(end + 1);
               name = left + right;
             }
           }
@@ -188,7 +195,8 @@ class RenameLogic {
             if (idx != -1) {
               if (del.direction == DeleteDirection.before) {
                 if (del.includeAnchor) {
-                  name = (idx + 1 >= name.length) ? '' : name.substring(idx + 1);
+                  name =
+                      (idx + 1 >= name.length) ? '' : name.substring(idx + 1);
                 } else {
                   name = name.substring(idx);
                 }
@@ -220,13 +228,19 @@ class RenameLogic {
           int idx = ins.customIndex.clamp(0, name.length);
           String left = name.substring(0, idx);
           String right = name.substring(idx);
-          name = left + (idx > 0 ? sep : '') + ins.text + (idx < name.length ? sep : '') + right;
+          name = left +
+              (idx > 0 ? sep : '') +
+              ins.text +
+              (idx < name.length ? sep : '') +
+              right;
           break;
       }
     }
 
     // 3. Apply parent directory name insert rules
-    if (rule.parentDirRule.enabled && parentDirName != null && parentDirName.isNotEmpty) {
+    if (rule.parentDirRule.enabled &&
+        parentDirName != null &&
+        parentDirName.isNotEmpty) {
       final pdir = rule.parentDirRule;
       final sep = pdir.separator;
       switch (pdir.position) {
@@ -240,7 +254,11 @@ class RenameLogic {
           int idx = pdir.customIndex.clamp(0, name.length);
           String left = name.substring(0, idx);
           String right = name.substring(idx);
-          name = left + (idx > 0 ? sep : '') + parentDirName + (idx < name.length ? sep : '') + right;
+          name = left +
+              (idx > 0 ? sep : '') +
+              parentDirName +
+              (idx < name.length ? sep : '') +
+              right;
           break;
       }
     }

@@ -21,6 +21,10 @@ import 'utils/move_logic.dart';
 import 'widgets/move_rule_panel.dart';
 import 'widgets/move_preview_panel.dart';
 
+import 'utils/sniffer_logic.dart';
+import 'widgets/sniffer_rule_panel.dart';
+import 'widgets/sniffer_preview_panel.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -88,7 +92,7 @@ class _MyAppState extends State<MyApp> {
         brightness: Brightness.light,
         colorScheme: const ColorScheme.light(
           primary: Colors.indigoAccent,
-          secondary: Colors.purpleAccent,
+          secondary: Colors.indigoAccent,
           surface: Colors.white,
         ),
         scaffoldBackgroundColor: const Color(0xFFF3F3F7),
@@ -102,7 +106,7 @@ class _MyAppState extends State<MyApp> {
         brightness: Brightness.dark,
         colorScheme: const ColorScheme.dark(
           primary: Colors.indigoAccent,
-          secondary: Colors.purpleAccent,
+          secondary: Colors.indigoAccent,
           surface: Color(0xFF121214),
         ),
         scaffoldBackgroundColor: const Color(0xFF0F0F12),
@@ -133,14 +137,14 @@ class MainDashboard extends StatefulWidget {
   State<MainDashboard> createState() => _MainDashboardState();
 }
 
-class _MainDashboardState extends State<MainDashboard> with TickerProviderStateMixin {
+class _MainDashboardState extends State<MainDashboard>
+    with TickerProviderStateMixin {
   String _selectedDirPath = '';
   int _currentTab = 0; // 0 for Rename, 1 for Delete
 
   // --- Rename States ---
   RenameRule _renameRule = RenameRule();
-  bool _isTargetFile = true;
-  bool _isTargetFolder = false;
+  RenameTarget _renameTarget = RenameTarget.file;
   bool _recursive = false;
   String _extensionFilter = '';
   bool _isScanning = false;
@@ -169,6 +173,14 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
   TabController? _mobileMoveTabController;
   Timer? _moveDebounceTimer;
 
+  // --- Sniffer States ---
+  SnifferRule _snifferRule = SnifferRule();
+  bool _isSnifferScan = false;
+  double _snifferScanProgress = 0.0;
+  String _snifferScanStatus = '';
+  List<SnifferFolderItem> _snifferItems = [];
+  TabController? _mobileSnifferTabController;
+
   @override
   void initState() {
     super.initState();
@@ -180,6 +192,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
     );
     _deleteRule = DeleteFilterRule();
     _moveRule = MoveFilterRule();
+    _snifferRule = SnifferRule();
   }
 
   @override
@@ -187,6 +200,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
     _mobileRenameTabController?.dispose();
     _mobileDeleteTabController?.dispose();
     _mobileMoveTabController?.dispose();
+    _mobileSnifferTabController?.dispose();
     _deleteDebounceTimer?.cancel();
     _moveDebounceTimer?.cancel();
     super.dispose();
@@ -195,20 +209,20 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
   /// Request permission and show directory picker
   Future<void> _selectDirectory() async {
     if (kIsWeb) return;
-    
+
     if (Platform.isAndroid) {
       final granted = await FileHelper.requestStoragePermission();
       if (!granted) {
         _showPermissionRequiredDialog();
         return;
       }
-      
+
       if (!mounted) return;
       final path = await showDialog<String>(
         context: context,
         builder: (context) => const AndroidDirPicker(),
       );
-      
+
       if (path != null && path.isNotEmpty) {
         setState(() {
           _selectedDirPath = path;
@@ -219,10 +233,20 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
       }
     } else {
       // Windows
+      String dialogTitle = '选择文件夹';
+      if (_currentTab == 0) {
+        dialogTitle = '选择要重命名的文件夹';
+      } else if (_currentTab == 1) {
+        dialogTitle = '选择要清理的文件夹';
+      } else if (_currentTab == 2) {
+        dialogTitle = '选择要移动的文件夹';
+      } else if (_currentTab == 3) {
+        dialogTitle = '选择要进行文件嗅探的文件夹';
+      }
       final path = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: _currentTab == 0 ? '选择要重命名的文件夹' : '选择要清理的文件夹',
+        dialogTitle: dialogTitle,
       );
-      
+
       if (path != null && path.isNotEmpty) {
         setState(() {
           _selectedDirPath = path;
@@ -242,13 +266,15 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
           backgroundColor: context.cardBg,
           title: Text(
             '主题设置',
-            style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: context.textColorPrimary, fontWeight: FontWeight.bold),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               RadioListTile<ThemeMode>(
-                title: Text('亮色模式', style: TextStyle(color: context.textColorPrimary)),
+                title: Text('亮色模式',
+                    style: TextStyle(color: context.textColorPrimary)),
                 value: ThemeMode.light,
                 groupValue: widget.currentThemeMode,
                 activeColor: Colors.indigoAccent,
@@ -260,7 +286,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                 },
               ),
               RadioListTile<ThemeMode>(
-                title: Text('暗色模式', style: TextStyle(color: context.textColorPrimary)),
+                title: Text('暗色模式',
+                    style: TextStyle(color: context.textColorPrimary)),
                 value: ThemeMode.dark,
                 groupValue: widget.currentThemeMode,
                 activeColor: Colors.indigoAccent,
@@ -272,7 +299,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                 },
               ),
               RadioListTile<ThemeMode>(
-                title: Text('跟随系统', style: TextStyle(color: context.textColorPrimary)),
+                title: Text('跟随系统',
+                    style: TextStyle(color: context.textColorPrimary)),
                 value: ThemeMode.system,
                 groupValue: widget.currentThemeMode,
                 activeColor: Colors.indigoAccent,
@@ -288,7 +316,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('关闭', style: TextStyle(color: context.textColorSecondary)),
+              child: Text('关闭',
+                  style: TextStyle(color: context.textColorSecondary)),
             ),
           ],
         );
@@ -301,7 +330,9 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: context.cardBg,
-        title: Text('需要存储管理权限', style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold)),
+        title: Text('需要存储管理权限',
+            style: TextStyle(
+                color: context.textColorPrimary, fontWeight: FontWeight.bold)),
         content: Text(
           '在 Android 11 及以上版本中，软件需要“所有文件访问权限”才能遍历外部文件夹并执行高速文件操作。请在接下来的设置中开启此权限。',
           style: TextStyle(color: context.textColorSecondary),
@@ -309,14 +340,16 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('取消', style: TextStyle(color: context.textColorSecondary)),
+            child:
+                Text('取消', style: TextStyle(color: context.textColorSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               openAppSettings();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigoAccent),
+            style:
+                ElevatedButton.styleFrom(backgroundColor: Colors.indigoAccent),
             child: const Text('去设置授权', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -324,16 +357,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
     );
   }
 
-  /// Trigger scanning based on active tab
-  void _scanCurrentTabDir() {
-    if (_currentTab == 0) {
-      _scanDirectory();
-    } else if (_currentTab == 1) {
-      _scanDirectoryForDelete();
-    } else {
-      _scanDirectoryForMove();
-    }
-  }
+
 
   /// Trigger directory scanning for Rename
   Future<void> _scanDirectory() async {
@@ -345,8 +369,10 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
 
     final items = await FileHelper.scanDirectory(
       rootPath: _selectedDirPath,
-      isTargetFile: _isTargetFile,
-      isTargetFolder: _isTargetFolder,
+      isTargetFile: _renameTarget == RenameTarget.file ||
+          _renameTarget == RenameTarget.both,
+      isTargetFolder: _renameTarget == RenameTarget.folder ||
+          _renameTarget == RenameTarget.both,
       recursive: _recursive,
       extensionFilter: _extensionFilter,
     );
@@ -382,8 +408,13 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
   ) {
     setState(() {
       _renameRule = rule;
-      _isTargetFile = isTargetFile;
-      _isTargetFolder = isTargetFolder;
+      if (isTargetFile && isTargetFolder) {
+        _renameTarget = RenameTarget.both;
+      } else if (isTargetFolder) {
+        _renameTarget = RenameTarget.folder;
+      } else {
+        _renameTarget = RenameTarget.file;
+      }
       _recursive = recursive;
       _extensionFilter = extensionFilter;
     });
@@ -476,6 +507,55 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
     });
   }
 
+  /// Trigger directory scanning for Sniffer
+  Future<void> _scanDirectoryForSniffer() async {
+    if (_selectedDirPath.isEmpty) return;
+
+    setState(() {
+      _isSnifferScan = true;
+      _snifferScanProgress = 0.0;
+      _snifferScanStatus = '开始扫描...';
+    });
+
+    final items = await SnifferLogic.scanDirectoriesForSniff(
+      rootPath: _selectedDirPath,
+      rule: _snifferRule,
+      onProgress: (progress, status) {
+        if (mounted) {
+          setState(() {
+            _snifferScanProgress = progress;
+            _snifferScanStatus = status;
+          });
+        }
+      },
+    );
+
+    if (mounted) {
+      setState(() {
+        _snifferItems = items;
+        _isSnifferScan = false;
+      });
+    }
+  }
+
+  /// Sniffer configurations changed callback
+  void _onSnifferRulePanelChanged(SnifferRule rule) {
+    final bool needsRescan = rule.recursive != _snifferRule.recursive;
+    setState(() {
+      _snifferRule = rule;
+    });
+
+    if (needsRescan && _selectedDirPath.isNotEmpty) {
+      _scanDirectoryForSniffer();
+    } else {
+      setState(() {
+        for (var item in _snifferItems) {
+          item.updateNewName(_snifferRule);
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -486,6 +566,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
       _mobileRenameTabController ??= TabController(length: 2, vsync: this);
       _mobileDeleteTabController ??= TabController(length: 2, vsync: this);
       _mobileMoveTabController ??= TabController(length: 2, vsync: this);
+      _mobileSnifferTabController ??= TabController(length: 2, vsync: this);
     } else {
       _mobileRenameTabController?.dispose();
       _mobileRenameTabController = null;
@@ -493,11 +574,15 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
       _mobileDeleteTabController = null;
       _mobileMoveTabController?.dispose();
       _mobileMoveTabController = null;
+      _mobileSnifferTabController?.dispose();
+      _mobileSnifferTabController = null;
     }
 
-    final activeColor = _currentTab == 0 
-        ? Colors.indigoAccent 
-        : (_currentTab == 1 ? Colors.redAccent : Colors.orangeAccent);
+    final activeColor = _currentTab == 0
+        ? Colors.indigoAccent
+        : (_currentTab == 1
+            ? Colors.redAccent
+            : (_currentTab == 2 ? Colors.orangeAccent : Colors.purpleAccent));
 
     return Scaffold(
       appBar: isMobileLayout
@@ -506,8 +591,13 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
               title: Text(
                 _currentTab == 0
                     ? '批量重命名'
-                    : (_currentTab == 1 ? '批量删除' : '批量移动'),
-                style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 18),
+                    : (_currentTab == 1
+                        ? '批量删除'
+                        : (_currentTab == 2 ? '批量移动' : '文件嗅探')),
+                style: TextStyle(
+                    color: context.textColorPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18),
               ),
               actions: [
                 IconButton(
@@ -523,7 +613,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
               elevation: 0,
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
-                child: Divider(color: context.borderColor, height: 1, thickness: 1),
+                child: Divider(
+                    color: context.borderColor, height: 1, thickness: 1),
               ),
             )
           : null,
@@ -538,6 +629,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                       Expanded(
                         child: NavigationRail(
                           backgroundColor: Colors.transparent,
+                          indicatorColor: Colors.transparent,
                           selectedIndex: _currentTab,
                           onDestinationSelected: (int index) {
                             setState(() {
@@ -549,23 +641,33 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                             color: activeColor,
                             fontWeight: FontWeight.bold,
                           ),
-                          unselectedLabelTextStyle: TextStyle(color: context.textColorSecondary),
+                          unselectedLabelTextStyle:
+                              TextStyle(color: context.textColorSecondary),
                           selectedIconTheme: IconThemeData(
                             color: activeColor,
                           ),
-                          unselectedIconTheme: IconThemeData(color: context.textColorSecondary),
+                          unselectedIconTheme:
+                              IconThemeData(color: context.textColorSecondary),
                           destinations: const [
                             NavigationRailDestination(
                               icon: Icon(Icons.auto_fix_high),
+                              selectedIcon: Icon(Icons.auto_fix_high),
                               label: Text('批量重命名'),
                             ),
                             NavigationRailDestination(
                               icon: Icon(Icons.delete_sweep),
+                              selectedIcon: Icon(Icons.delete_sweep),
                               label: Text('批量删除'),
                             ),
                             NavigationRailDestination(
                               icon: Icon(Icons.drive_file_move),
+                              selectedIcon: Icon(Icons.drive_file_move),
                               label: Text('批量移动'),
+                            ),
+                            NavigationRailDestination(
+                              icon: Icon(Icons.saved_search),
+                              selectedIcon: Icon(Icons.saved_search),
+                              label: Text('文件嗅探'),
                             ),
                           ],
                         ),
@@ -584,7 +686,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                     ],
                   ),
                 ),
-                VerticalDivider(thickness: 1, width: 1, color: context.borderColor),
+                VerticalDivider(
+                    thickness: 1, width: 1, color: context.borderColor),
                 Expanded(
                   child: _buildDesktopView(),
                 ),
@@ -614,6 +717,10 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                   icon: Icon(Icons.drive_file_move),
                   label: '批量移动',
                 ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.saved_search),
+                  label: '文件嗅探',
+                ),
               ],
             )
           : null,
@@ -626,8 +733,10 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
       return _buildRenameDesktopView();
     } else if (_currentTab == 1) {
       return _buildDeleteDesktopView();
-    } else {
+    } else if (_currentTab == 2) {
       return _buildMoveDesktopView();
+    } else {
+      return _buildSnifferDesktopView();
     }
   }
 
@@ -647,8 +756,11 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                   const SizedBox(height: 12),
                   RenameRulePanel(
                     initialRule: _renameRule,
-                    initialIsTargetFile: _isTargetFile,
-                    initialIsTargetFolder: _isTargetFolder,
+                    initialIsTargetFile: _renameTarget == RenameTarget.file ||
+                        _renameTarget == RenameTarget.both,
+                    initialIsTargetFolder:
+                        _renameTarget == RenameTarget.folder ||
+                            _renameTarget == RenameTarget.both,
                     initialRecursive: _recursive,
                     initialExtensionFilter: _extensionFilter,
                     onChanged: _onRulePanelChanged,
@@ -708,7 +820,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
               scanStatus: _deleteScanStatus,
               onDeleteStarted: () {},
               onDeleteCompleted: _scanDirectoryForDelete,
-              onSearch: _selectedDirPath.isNotEmpty ? _scanDirectoryForDelete : null,
+              onSearch:
+                  _selectedDirPath.isNotEmpty ? _scanDirectoryForDelete : null,
             ),
           ),
         ],
@@ -756,7 +869,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
               conflictStrategy: _conflictStrategy,
               onMoveStarted: () {},
               onMoveCompleted: _scanDirectoryForMove,
-              onSearch: _selectedDirPath.isNotEmpty ? _scanDirectoryForMove : null,
+              onSearch:
+                  _selectedDirPath.isNotEmpty ? _scanDirectoryForMove : null,
             ),
           ),
         ],
@@ -770,13 +884,18 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
       return _buildRenameMobileView();
     } else if (_currentTab == 1) {
       return _buildDeleteMobileView();
-    } else {
+    } else if (_currentTab == 2) {
       return _buildMoveMobileView();
+    } else {
+      return _buildSnifferMobileView();
     }
   }
 
   Widget _buildRenameMobileView() {
-    final changedCount = _renameItems.where((item) => item.newName != item.baseName && item.newName.isNotEmpty).length;
+    final changedCount = _renameItems
+        .where(
+            (item) => item.isSelected && item.newName != item.baseName && item.newName.isNotEmpty)
+        .length;
 
     return Column(
       children: [
@@ -785,7 +904,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: _buildDirSelectorCard(),
         ),
-        
+
         // Mobile Tab Bar
         TabBar(
           controller: _mobileRenameTabController,
@@ -811,7 +930,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
             ),
           ],
         ),
-        
+
         // Tab Content
         Expanded(
           child: TabBarView(
@@ -823,15 +942,18 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                 child: SingleChildScrollView(
                   child: RenameRulePanel(
                     initialRule: _renameRule,
-                    initialIsTargetFile: _isTargetFile,
-                    initialIsTargetFolder: _isTargetFolder,
+                    initialIsTargetFile: _renameTarget == RenameTarget.file ||
+                        _renameTarget == RenameTarget.both,
+                    initialIsTargetFolder:
+                        _renameTarget == RenameTarget.folder ||
+                            _renameTarget == RenameTarget.both,
                     initialRecursive: _recursive,
                     initialExtensionFilter: _extensionFilter,
                     onChanged: _onRulePanelChanged,
                   ),
                 ),
               ),
-              
+
               // Tab 2: Preview Panel
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -851,7 +973,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
   }
 
   Widget _buildDeleteMobileView() {
-    final selectedDeleteCount = _deleteItems.where((item) => item.isSelected).length;
+    final selectedDeleteCount =
+        _deleteItems.where((item) => item.isSelected).length;
 
     return Column(
       children: [
@@ -860,7 +983,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: _buildDirSelectorCard(),
         ),
-        
+
         // Mobile Tab Bar
         TabBar(
           controller: _mobileDeleteTabController,
@@ -886,7 +1009,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
             ),
           ],
         ),
-        
+
         // Tab Content
         Expanded(
           child: TabBarView(
@@ -903,7 +1026,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                   ),
                 ),
               ),
-              
+
               // Tab 2: Preview Panel
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -914,7 +1037,9 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                   scanStatus: _deleteScanStatus,
                   onDeleteStarted: () {},
                   onDeleteCompleted: _scanDirectoryForDelete,
-                  onSearch: _selectedDirPath.isNotEmpty ? _scanDirectoryForDelete : null,
+                  onSearch: _selectedDirPath.isNotEmpty
+                      ? _scanDirectoryForDelete
+                      : null,
                 ),
               ),
             ],
@@ -925,7 +1050,8 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
   }
 
   Widget _buildMoveMobileView() {
-    final selectedMoveCount = _moveItems.where((item) => item.isSelected).length;
+    final selectedMoveCount =
+        _moveItems.where((item) => item.isSelected).length;
 
     return Column(
       children: [
@@ -934,7 +1060,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: _buildDirSelectorCard(),
         ),
-        
+
         // Mobile Tab Bar
         TabBar(
           controller: _mobileMoveTabController,
@@ -960,7 +1086,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
             ),
           ],
         ),
-        
+
         // Tab Content
         Expanded(
           child: TabBarView(
@@ -979,7 +1105,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                   ),
                 ),
               ),
-              
+
               // Tab 2: Preview Panel
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -994,7 +1120,9 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                   conflictStrategy: _conflictStrategy,
                   onMoveStarted: () {},
                   onMoveCompleted: _scanDirectoryForMove,
-                  onSearch: _selectedDirPath.isNotEmpty ? _scanDirectoryForMove : null,
+                  onSearch: _selectedDirPath.isNotEmpty
+                      ? _scanDirectoryForMove
+                      : null,
                 ),
               ),
             ],
@@ -1004,12 +1132,12 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
     );
   }
 
-
-
   Widget _buildDirSelectorCard() {
-    final activeColor = _currentTab == 0 
-        ? Colors.indigoAccent 
-        : (_currentTab == 1 ? Colors.redAccent : Colors.orangeAccent);
+    final activeColor = _currentTab == 0
+        ? Colors.indigoAccent
+        : (_currentTab == 1
+            ? Colors.redAccent
+            : (_currentTab == 2 ? Colors.orangeAccent : Colors.purpleAccent));
 
     return Card(
       color: context.cardBg,
@@ -1024,14 +1152,18 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
           children: [
             Text(
               '选择目标文件夹',
-              style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
+              style: TextStyle(
+                  color: context.textColorPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15),
             ),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: context.inputBg,
                       borderRadius: BorderRadius.circular(12),
@@ -1040,7 +1172,9 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                     child: Text(
                       _selectedDirPath.isEmpty ? '未选择任何目录' : _selectedDirPath,
                       style: TextStyle(
-                        color: _selectedDirPath.isEmpty ? context.textColorSecondary : activeColor,
+                        color: _selectedDirPath.isEmpty
+                            ? context.textColorSecondary
+                            : activeColor,
                         fontSize: 13,
                         fontFamily: 'monospace',
                       ),
@@ -1049,17 +1183,7 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                     ),
                   ),
                 ),
-                if (_selectedDirPath.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: _scanCurrentTabDir,
-                    icon: const Icon(Icons.refresh, size: 20),
-                    tooltip: '重新扫描目录',
-                    style: IconButton.styleFrom(
-                      foregroundColor: context.textColorSecondary,
-                    ),
-                  ),
-                ],
+
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: _selectDirectory,
@@ -1067,9 +1191,14 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
                   label: const Text('选择'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: activeColor,
-                    foregroundColor: activeColor == Colors.indigoAccent ? Colors.white : Colors.black,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    foregroundColor: activeColor == Colors.indigoAccent ||
+                            activeColor == Colors.purpleAccent
+                        ? Colors.white
+                        : Colors.black,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                 ),
               ],
@@ -1077,6 +1206,130 @@ class _MainDashboardState extends State<MainDashboard> with TickerProviderStateM
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSnifferDesktopView() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Left Sidebar: Directory Selector & Config Panel
+          Expanded(
+            flex: 4,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildDirSelectorCard(),
+                  const SizedBox(height: 12),
+                  SnifferRulePanel(
+                    initialRule: _snifferRule,
+                    onChanged: _onSnifferRulePanelChanged,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Right Main Area: Sniffer Preview Panel
+          Expanded(
+            flex: 5,
+            child: SnifferPreviewPanel(
+              items: _snifferItems,
+              isScanning: _isSnifferScan,
+              scanProgress: _snifferScanProgress,
+              scanStatus: _snifferScanStatus,
+              onRenameCompleted: _scanDirectoryForSniffer,
+              rule: _snifferRule,
+              onSearch:
+                  _selectedDirPath.isNotEmpty ? _scanDirectoryForSniffer : null,
+              onSelectDirectory: _selectDirectory,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSnifferMobileView() {
+    final changedCount = _snifferItems
+        .where((item) =>
+            item.newName != item.currentName &&
+            item.newName.isNotEmpty &&
+            item.isSelected)
+        .length;
+
+    return Column(
+      children: [
+        // Target Dir Selector at Top
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: _buildDirSelectorCard(),
+        ),
+
+        // Mobile Tab Bar
+        TabBar(
+          controller: _mobileSnifferTabController,
+          labelColor: Colors.purpleAccent,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: Colors.purpleAccent,
+          tabs: [
+            const Tab(text: '嗅探配置', icon: Icon(Icons.tune)),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('嗅探结果'),
+                  if (changedCount > 0) ...[
+                    const SizedBox(width: 6),
+                    Badge(
+                      label: Text('$changedCount'),
+                      backgroundColor: Colors.purpleAccent,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        // Tab Content
+        Expanded(
+          child: TabBarView(
+            controller: _mobileSnifferTabController,
+            children: [
+              // Tab 1: Rules Configuration
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SingleChildScrollView(
+                  child: SnifferRulePanel(
+                    initialRule: _snifferRule,
+                    onChanged: _onSnifferRulePanelChanged,
+                  ),
+                ),
+              ),
+
+              // Tab 2: Preview Panel
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SnifferPreviewPanel(
+                  items: _snifferItems,
+                  isScanning: _isSnifferScan,
+                  scanProgress: _snifferScanProgress,
+                  scanStatus: _snifferScanStatus,
+                  onRenameCompleted: _scanDirectoryForSniffer,
+                  rule: _snifferRule,
+                  onSearch: _selectedDirPath.isNotEmpty
+                      ? _scanDirectoryForSniffer
+                      : null,
+                  onSelectDirectory: _selectDirectory,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

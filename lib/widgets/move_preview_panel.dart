@@ -91,11 +91,14 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
     if (bytes <= 0) return '0 B';
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
-  int get _selectedCount => widget.items.where((item) => item.isSelected).length;
+  int get _selectedCount =>
+      widget.items.where((item) => item.isSelected).length;
 
   int get _selectedSizeSum {
     int sum = 0;
@@ -130,7 +133,8 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
     // 2. Prevent moving source to a subfolder inside itself (infinite loops)
     final bool isLoopConflict = widget.rule.flattenToRoot
         ? p.isWithin(widget.sourceDirPath, widget.targetDirPath)
-        : (p.isWithin(widget.sourceDirPath, widget.targetDirPath) || p.equals(widget.sourceDirPath, widget.targetDirPath));
+        : (p.isWithin(widget.sourceDirPath, widget.targetDirPath) ||
+            p.equals(widget.sourceDirPath, widget.targetDirPath));
 
     if (isLoopConflict) {
       showDialog(
@@ -151,7 +155,8 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('好的', style: TextStyle(color: Colors.orangeAccent)),
+              child: const Text('好的',
+                  style: TextStyle(color: Colors.orangeAccent)),
             ),
           ],
         ),
@@ -159,7 +164,8 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
       return;
     }
 
-    final selectedItems = widget.items.where((item) => item.isSelected).toList();
+    final selectedItems =
+        widget.items.where((item) => item.isSelected).toList();
     if (selectedItems.isEmpty) return;
 
     // Safety Dialogue Confirmation
@@ -168,12 +174,17 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: context.cardBg,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
-              const Icon(Icons.info_outline, color: Colors.orangeAccent, size: 28),
+              const Icon(Icons.info_outline,
+                  color: Colors.orangeAccent, size: 28),
               const SizedBox(width: 8),
-              Text('确认批量移动？', style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold)),
+              Text('确认批量移动？',
+                  style: TextStyle(
+                      color: context.textColorPrimary,
+                      fontWeight: FontWeight.bold)),
             ],
           ),
           content: Column(
@@ -189,13 +200,15 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
               const SizedBox(height: 12),
               Text(
                 '源目录:\n${widget.sourceDirPath}',
-                style: TextStyle(color: context.textColorSecondary, fontSize: 12),
+                style:
+                    TextStyle(color: context.textColorSecondary, fontSize: 12),
               ),
               if (!widget.rule.flattenToRoot) ...[
                 const SizedBox(height: 8),
                 Text(
                   '目标目录:\n${widget.targetDirPath}',
-                  style: const TextStyle(color: Colors.orangeAccent, fontSize: 12),
+                  style:
+                      const TextStyle(color: Colors.orangeAccent, fontSize: 12),
                 ),
               ],
               const SizedBox(height: 12),
@@ -203,22 +216,27 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                 widget.rule.flattenToRoot
                     ? '提示：移动完成后，所有空子文件夹将被自动递归清理。'
                     : '提示：跨分区移动大文件可能需要稍等片刻，此时会采用后台复制并删除源文件的Fallback方案。',
-                style: TextStyle(color: context.textColorSecondary, fontSize: 12, fontStyle: FontStyle.italic),
+                style: TextStyle(
+                    color: context.textColorSecondary,
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text('取消', style: TextStyle(color: context.textColorSecondary)),
+              child: Text('取消',
+                  style: TextStyle(color: context.textColorSecondary)),
             ),
-            ElevatedButton(
+            FilledButton.tonalIcon(
               onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
+              icon: const Icon(Icons.check, size: 18),
+              label: const Text('确认移动'),
+              style: FilledButton.styleFrom(
                 backgroundColor: Colors.orangeAccent,
                 foregroundColor: Colors.black,
               ),
-              child: const Text('确认移动'),
             ),
           ],
         );
@@ -265,8 +283,12 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: context.cardBg,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Text('移动完毕', style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text('移动完毕',
+                style: TextStyle(
+                    color: context.textColorPrimary,
+                    fontWeight: FontWeight.bold)),
             content: Text(
               '移动成功: $_successCount 个项目\n移动失败: $_failCount 个项目\n共计处理空间: ${_formatSize(_selectedSizeSum)}',
               style: TextStyle(color: context.textColorSecondary, fontSize: 16),
@@ -277,7 +299,8 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                   Navigator.pop(context);
                   widget.onMoveCompleted();
                 },
-                style: TextButton.styleFrom(foregroundColor: Colors.orangeAccent),
+                style:
+                    TextButton.styleFrom(foregroundColor: Colors.orangeAccent),
                 child: const Text('确定'),
               ),
             ],
@@ -289,8 +312,10 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final allChecked = widget.items.isNotEmpty && widget.items.every((item) => item.isSelected);
-    final someChecked = widget.items.any((item) => item.isSelected) && !allChecked;
+    final allChecked = widget.items.isNotEmpty &&
+        widget.items.every((item) => item.isSelected);
+    final someChecked =
+        widget.items.any((item) => item.isSelected) && !allChecked;
 
     List<MoveItem> sortedItems = List.from(widget.items);
     if (_sortColumnIndex == 0) {
@@ -300,7 +325,8 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
       });
     } else if (_sortColumnIndex == 1) {
       sortedItems.sort((a, b) {
-        int cmp = a.matchReason.toLowerCase().compareTo(b.matchReason.toLowerCase());
+        int cmp =
+            a.matchReason.toLowerCase().compareTo(b.matchReason.toLowerCase());
         return _sortAscending ? cmp : -cmp;
       });
     } else if (_sortColumnIndex == 2) {
@@ -331,47 +357,67 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                     children: [
                       Text(
                         '待移动项目队列',
-                        style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(
+                            color: context.textColorPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '扫描到 ${widget.items.length} 个项目，已选择 $_selectedCount 个，预计移动空间: ${_formatSize(_selectedSizeSum)}',
-                        style: TextStyle(color: context.textColorSecondary, fontSize: 12),
+                        style: TextStyle(
+                            color: context.textColorSecondary, fontSize: 12),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: (widget.isScanning || _isExecuting || widget.onSearch == null)
+                FilledButton.tonalIcon(
+                  onPressed: (widget.isScanning ||
+                          _isExecuting ||
+                          widget.onSearch == null)
                       ? null
                       : widget.onSearch,
                   icon: const Icon(Icons.search, size: 20),
                   label: const Text('预览'),
-                  style: ElevatedButton.styleFrom(
+                  style: FilledButton.styleFrom(
                     backgroundColor: Colors.orangeAccent,
                     foregroundColor: Colors.black,
-                    disabledBackgroundColor: context.isDarkMode ? Colors.grey[800] : Colors.grey[300],
-                    disabledForegroundColor: context.isDarkMode ? Colors.grey[600] : Colors.grey[500],
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    disabledBackgroundColor: context.isDarkMode
+                        ? Colors.grey[800]
+                        : Colors.grey[300],
+                    disabledForegroundColor: context.isDarkMode
+                        ? Colors.grey[600]
+                        : Colors.grey[500],
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: (_isExecuting || widget.items.isEmpty || _selectedCount == 0)
+                FilledButton.tonalIcon(
+                  onPressed: (_isExecuting ||
+                          widget.items.isEmpty ||
+                          _selectedCount == 0)
                       ? null
                       : _startMoveProcess,
                   icon: const Icon(Icons.drive_file_move_outlined),
-                  label: const Text('一键移动'),
-                  style: ElevatedButton.styleFrom(
+                  label: const Text('移动'),
+                  style: FilledButton.styleFrom(
                     backgroundColor: Colors.orangeAccent,
                     foregroundColor: Colors.black,
-                    disabledBackgroundColor: context.isDarkMode ? Colors.grey[800] : Colors.grey[300],
-                    disabledForegroundColor: context.isDarkMode ? Colors.grey[600] : Colors.grey[500],
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    disabledBackgroundColor: context.isDarkMode
+                        ? Colors.grey[800]
+                        : Colors.grey[300],
+                    disabledForegroundColor: context.isDarkMode
+                        ? Colors.grey[600]
+                        : Colors.grey[500],
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                 ),
               ],
@@ -393,22 +439,30 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('正在移动文件...', style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold)),
-                        Text('${(_progress * 100).toStringAsFixed(0)}%', style: const TextStyle(color: Colors.orangeAccent)),
+                        Text('正在移动文件...',
+                            style: TextStyle(
+                                color: context.textColorPrimary,
+                                fontWeight: FontWeight.bold)),
+                        Text('${(_progress * 100).toStringAsFixed(0)}%',
+                            style: const TextStyle(color: Colors.orangeAccent)),
                       ],
                     ),
                     const SizedBox(height: 8),
                     LinearProgressIndicator(
                       value: _progress,
-                      backgroundColor: context.isDarkMode ? Colors.grey[800] : Colors.grey[300],
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.orangeAccent),
+                      backgroundColor: context.isDarkMode
+                          ? Colors.grey[800]
+                          : Colors.grey[300],
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                          Colors.orangeAccent),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       '正在处理: $_currentExecutingItem',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: context.textColorSecondary, fontSize: 12),
+                      style: TextStyle(
+                          color: context.textColorSecondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -421,7 +475,8 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: context.inputBg,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(8)),
               ),
               child: Row(
                 children: [
@@ -480,22 +535,33 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                               width: 48,
                               child: CircularProgressIndicator(
                                 strokeWidth: 4,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.orangeAccent),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.orangeAccent),
                               ),
                             ),
                             const SizedBox(height: 24),
                             Text(
-                              widget.scanStatus.isNotEmpty ? widget.scanStatus : '正在扫描中...',
-                              style: TextStyle(color: context.textColorPrimary, fontSize: 14, fontWeight: FontWeight.bold),
+                              widget.scanStatus.isNotEmpty
+                                  ? widget.scanStatus
+                                  : '正在扫描中...',
+                              style: TextStyle(
+                                  color: context.textColorPrimary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
                             ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: LinearProgressIndicator(
-                                value: widget.scanProgress > 0.0 ? widget.scanProgress : null,
-                                backgroundColor: context.isDarkMode ? const Color(0xFF2D2D34) : Colors.grey[300],
-                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.orangeAccent),
+                                value: widget.scanProgress > 0.0
+                                    ? widget.scanProgress
+                                    : null,
+                                backgroundColor: context.isDarkMode
+                                    ? const Color(0xFF2D2D34)
+                                    : Colors.grey[300],
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                    Colors.orangeAccent),
                                 minHeight: 6,
                               ),
                             ),
@@ -503,7 +569,10 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                               const SizedBox(height: 8),
                               Text(
                                 '${(widget.scanProgress * 100).toStringAsFixed(0)}%',
-                                style: const TextStyle(color: Colors.orangeAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    color: Colors.orangeAccent,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ],
                           ],
@@ -512,19 +581,42 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                     )
                   : widget.items.isEmpty
                       ? Center(
-                          child: Text('没有符合移动条件的文件/文件夹', style: TextStyle(color: context.textColorSecondary)),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.folder_open,
+                                size: 48,
+                                color:
+                                    context.textColorSecondary.withOpacity(0.5),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                widget.onSearch == null
+                                    ? '尚未选择任何目标文件夹\n请点击左上角的“选择”按钮选择文件夹以开始'
+                                    : '没有符合移动条件的文件/文件夹',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    color: context.textColorSecondary,
+                                    fontSize: 14,
+                                    height: 1.5),
+                              ),
+                            ],
+                          ),
                         )
                       : Container(
                           decoration: BoxDecoration(
                             color: context.listBg,
-                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
+                            borderRadius: const BorderRadius.vertical(
+                                bottom: Radius.circular(8)),
                           ),
                           child: ListView.separated(
                             itemCount: sortedItems.length,
-                            separatorBuilder: (context, index) => Divider(color: context.borderColor, height: 1),
+                            separatorBuilder: (context, index) =>
+                                Divider(color: context.borderColor, height: 1),
                             itemBuilder: (context, index) {
                               final item = sortedItems[index];
-                              
+
                               IconData iconData = Icons.insert_drive_file;
                               Color iconColor = Colors.grey;
                               if (item.isDirectory) {
@@ -541,18 +633,23 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                               if (isAutoDelete) {
                                 planDestPath = '[自动删除]';
                               } else if (widget.rule.flattenToRoot) {
-                                planDestPath = p.join(widget.sourceDirPath, item.name);
+                                planDestPath =
+                                    p.join(widget.sourceDirPath, item.name);
                               } else if (widget.targetDirPath.isNotEmpty) {
                                 if (widget.rule.keepStructure) {
-                                  final rel = p.relative(item.path, from: widget.sourceDirPath);
-                                  planDestPath = p.join(widget.targetDirPath, rel);
+                                  final rel = p.relative(item.path,
+                                      from: widget.sourceDirPath);
+                                  planDestPath =
+                                      p.join(widget.targetDirPath, rel);
                                 } else {
-                                  planDestPath = p.join(widget.targetDirPath, item.name);
+                                  planDestPath =
+                                      p.join(widget.targetDirPath, item.name);
                                 }
                               }
 
                               return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 6),
                                 child: Row(
                                   children: [
                                     Checkbox(
@@ -565,30 +662,36 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                                       },
                                     ),
                                     const SizedBox(width: 4),
-                                    
                                     Expanded(
                                       flex: 5,
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [
-                                              Icon(iconData, color: iconColor, size: 16),
+                                              Icon(iconData,
+                                                  color: iconColor, size: 16),
                                               const SizedBox(width: 6),
                                               Expanded(
                                                 child: Tooltip(
                                                   message: '点击打开: ${item.path}',
                                                   child: InkWell(
-                                                    onTap: () => FileHelper.openFileOrFolder(item.path),
+                                                    onTap: () => FileHelper
+                                                        .openFileOrFolder(
+                                                            item.path),
                                                     child: Text(
                                                       item.name,
                                                       style: TextStyle(
-                                                        color: context.textColorPrimary,
+                                                        color: context
+                                                            .textColorPrimary,
                                                         fontSize: 13,
-                                                        fontWeight: FontWeight.w500,
+                                                        fontWeight:
+                                                            FontWeight.w500,
                                                       ),
                                                       maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                 ),
@@ -599,10 +702,15 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                                           Tooltip(
                                             message: item.path,
                                             child: InkWell(
-                                              onTap: () => FileHelper.openFileOrFolder(item.path),
+                                              onTap: () =>
+                                                  FileHelper.openFileOrFolder(
+                                                      item.path),
                                               child: Text(
                                                 item.path,
-                                                style: TextStyle(color: context.textColorSecondary, fontSize: 11),
+                                                style: TextStyle(
+                                                    color: context
+                                                        .textColorSecondary,
+                                                    fontSize: 11),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
@@ -615,29 +723,43 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                                                 Icon(
                                                   planDestPath == '[自动删除]'
                                                       ? Icons.delete_forever
-                                                      : Icons.subdirectory_arrow_right,
-                                                  color: planDestPath == '[自动删除]'
-                                                      ? Colors.redAccent
-                                                      : Colors.orangeAccent,
+                                                      : Icons
+                                                          .subdirectory_arrow_right,
+                                                  color:
+                                                      planDestPath == '[自动删除]'
+                                                          ? Colors.redAccent
+                                                          : Colors.orangeAccent,
                                                   size: 11,
                                                 ),
                                                 const SizedBox(width: 4),
                                                 Expanded(
                                                   child: Tooltip(
-                                                    message: planDestPath == '[自动删除]' ? '此小文件将被自动删除' : '移动至: $planDestPath',
+                                                    message: planDestPath ==
+                                                            '[自动删除]'
+                                                        ? '此小文件将被自动删除'
+                                                        : '移动至: $planDestPath',
                                                     child: Text(
-                                                      planDestPath == '[自动删除]' ? '将自动直接删除' : '移动至: $planDestPath',
+                                                      planDestPath == '[自动删除]'
+                                                          ? '将自动直接删除'
+                                                          : '移动至: $planDestPath',
                                                       style: TextStyle(
-                                                        color: planDestPath == '[自动删除]'
+                                                        color: planDestPath ==
+                                                                '[自动删除]'
                                                             ? Colors.redAccent
-                                                            : Colors.orangeAccent,
+                                                            : Colors
+                                                                .orangeAccent,
                                                         fontSize: 11,
-                                                        fontWeight: planDestPath == '[自动删除]'
-                                                            ? FontWeight.bold
-                                                            : FontWeight.normal,
+                                                        fontWeight:
+                                                            planDestPath ==
+                                                                    '[自动删除]'
+                                                                ? FontWeight
+                                                                    .bold
+                                                                : FontWeight
+                                                                    .normal,
                                                       ),
                                                       maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                 ),
@@ -649,7 +771,9 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                                             Text(
                                               '失败原因: ${item.error}',
                                               style: TextStyle(
-                                                color: context.isDarkMode ? Colors.redAccent : Colors.red[700],
+                                                color: context.isDarkMode
+                                                    ? Colors.redAccent
+                                                    : Colors.red[700],
                                                 fontSize: 11,
                                               ),
                                             ),
@@ -657,33 +781,42 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                                         ],
                                       ),
                                     ),
-                                    
                                     Expanded(
                                       flex: 3,
                                       child: Align(
                                         alignment: Alignment.centerLeft,
                                         child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: Colors.orangeAccent.withOpacity(0.12),
-                                            borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(color: Colors.orangeAccent.withOpacity(0.2)),
+                                            color: Colors.orangeAccent
+                                                .withOpacity(0.12),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                            border: Border.all(
+                                                color: Colors.orangeAccent
+                                                    .withOpacity(0.2)),
                                           ),
                                           child: Text(
                                             item.matchReason,
-                                            style: const TextStyle(color: Colors.orangeAccent, fontSize: 11),
+                                            style: const TextStyle(
+                                                color: Colors.orangeAccent,
+                                                fontSize: 11),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                       ),
                                     ),
-                                    
                                     Expanded(
                                       flex: 2,
                                       child: Text(
-                                        item.isDirectory ? '-' : _formatSize(item.size),
-                                        style: TextStyle(color: context.textColorPrimary, fontSize: 12),
+                                        item.isDirectory
+                                            ? '-'
+                                            : _formatSize(item.size),
+                                        style: TextStyle(
+                                            color: context.textColorPrimary,
+                                            fontSize: 12),
                                       ),
                                     ),
                                   ],

@@ -18,6 +18,7 @@ class RenameItem {
   String newPath;
   String? error;
   bool isSuccess;
+  bool isSelected;
 
   RenameItem({
     required this.entity,
@@ -32,6 +33,7 @@ class RenameItem {
     this.newPath = '',
     this.error,
     this.isSuccess = false,
+    this.isSelected = true,
   });
 
   void updateNewName(String name) {

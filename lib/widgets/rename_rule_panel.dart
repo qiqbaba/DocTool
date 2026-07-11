@@ -31,25 +31,33 @@ class RenameRulePanel extends StatefulWidget {
   State<RenameRulePanel> createState() => _RenameRulePanelState();
 }
 
-class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProviderStateMixin {
+class _RenameRulePanelState extends State<RenameRulePanel>
+    with SingleTickerProviderStateMixin {
   late RenameRule _rule;
-  late bool _isTargetFile;
-  late bool _isTargetFolder;
+  late RenameTarget _target;
   late bool _recursive;
   late String _extensionFilter;
+
+  bool get _isTargetFile =>
+      _target == RenameTarget.file || _target == RenameTarget.both;
+  bool get _isTargetFolder =>
+      _target == RenameTarget.folder || _target == RenameTarget.both;
 
   // Controllers
   final TextEditingController _extController = TextEditingController();
   final TextEditingController _insertTextController = TextEditingController();
   final TextEditingController _insertIndexController = TextEditingController();
-  final TextEditingController _insertSeparatorCustomController = TextEditingController();
+  final TextEditingController _insertSeparatorCustomController =
+      TextEditingController();
   final TextEditingController _deleteMatchController = TextEditingController();
   final TextEditingController _deleteCountController = TextEditingController();
   final TextEditingController _deleteStartController = TextEditingController();
   final TextEditingController _deleteEndController = TextEditingController();
   final TextEditingController _deleteAnchorController = TextEditingController();
-  final TextEditingController _parentDirIndexController = TextEditingController();
-  final TextEditingController _parentDirSeparatorCustomController = TextEditingController();
+  final TextEditingController _parentDirIndexController =
+      TextEditingController();
+  final TextEditingController _parentDirSeparatorCustomController =
+      TextEditingController();
 
   late TabController _tabController;
   late String _selectedInsertSepType;
@@ -59,8 +67,13 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
   void initState() {
     super.initState();
     _rule = widget.initialRule;
-    _isTargetFile = widget.initialIsTargetFile;
-    _isTargetFolder = widget.initialIsTargetFolder;
+    if (widget.initialIsTargetFile && widget.initialIsTargetFolder) {
+      _target = RenameTarget.both;
+    } else if (widget.initialIsTargetFolder) {
+      _target = RenameTarget.folder;
+    } else {
+      _target = RenameTarget.file;
+    }
     _recursive = widget.initialRecursive;
     _extensionFilter = widget.initialExtensionFilter;
 
@@ -70,7 +83,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
     _extController.text = _extensionFilter;
     _insertTextController.text = _rule.insertRule.text;
     _insertIndexController.text = _rule.insertRule.customIndex.toString();
-    
+
     // Set separator states and controllers
     final initialInsertSep = _rule.insertRule.separator;
     if (['', '-', '_', ' ', '.'].contains(initialInsertSep)) {
@@ -118,14 +131,16 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
     _insertSeparatorCustomController.addListener(() {
       if (_selectedInsertSepType == 'custom') {
         _rule = _rule.copyWith(
-          insertRule: _rule.insertRule.copyWith(separator: _insertSeparatorCustomController.text),
+          insertRule: _rule.insertRule
+              .copyWith(separator: _insertSeparatorCustomController.text),
         );
         _triggerChanged();
       }
     });
     _deleteMatchController.addListener(() {
       _rule = _rule.copyWith(
-        deleteRule: _rule.deleteRule.copyWith(matchText: _deleteMatchController.text),
+        deleteRule:
+            _rule.deleteRule.copyWith(matchText: _deleteMatchController.text),
       );
       _triggerChanged();
     });
@@ -152,7 +167,8 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
     });
     _deleteAnchorController.addListener(() {
       _rule = _rule.copyWith(
-        deleteRule: _rule.deleteRule.copyWith(anchorChar: _deleteAnchorController.text),
+        deleteRule:
+            _rule.deleteRule.copyWith(anchorChar: _deleteAnchorController.text),
       );
       _triggerChanged();
     });
@@ -166,7 +182,8 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
     _parentDirSeparatorCustomController.addListener(() {
       if (_selectedParentDirSepType == 'custom') {
         _rule = _rule.copyWith(
-          parentDirRule: _rule.parentDirRule.copyWith(separator: _parentDirSeparatorCustomController.text),
+          parentDirRule: _rule.parentDirRule
+              .copyWith(separator: _parentDirSeparatorCustomController.text),
         );
         _triggerChanged();
       }
@@ -191,7 +208,8 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
   }
 
   void _triggerChanged() {
-    widget.onChanged(_rule, _isTargetFile, _isTargetFolder, _recursive, _extensionFilter);
+    widget.onChanged(
+        _rule, _isTargetFile, _isTargetFolder, _recursive, _extensionFilter);
   }
 
   InputDecoration _buildInputDecoration(String label, {String? hint}) {
@@ -214,7 +232,8 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
     );
   }
 
-  Widget _buildSwitchHeader(String title, bool val, ValueChanged<bool> onToggle) {
+  Widget _buildSwitchHeader(
+      String title, bool val, ValueChanged<bool> onToggle) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -254,51 +273,68 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
               children: [
                 Text(
                   '重命名范围',
-                  style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
+                  style: TextStyle(
+                      color: context.textColorPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15),
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Object Type Segment
                 Row(
                   children: [
-                    Text('对象类型:', style: TextStyle(color: context.textColorSecondary)),
+                    Text('对象类型:',
+                        style: TextStyle(color: context.textColorSecondary)),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: SegmentedButton<String>(
-                        multiSelectionEnabled: true,
-                        emptySelectionAllowed: false,
+                      child: SegmentedButton<RenameTarget>(
                         segments: const [
-                          ButtonSegment<String>(
-                            value: 'file',
+                          ButtonSegment<RenameTarget>(
+                            value: RenameTarget.file,
                             label: Text('文件'),
-                            icon: Icon(Icons.insert_drive_file),
+                            icon: Icon(Icons.insert_drive_file, size: 16),
                           ),
-                          ButtonSegment<String>(
-                            value: 'folder',
+                          ButtonSegment<RenameTarget>(
+                            value: RenameTarget.folder,
                             label: Text('文件夹'),
-                            icon: Icon(Icons.folder),
+                            icon: Icon(Icons.folder, size: 16),
+                          ),
+                          ButtonSegment<RenameTarget>(
+                            value: RenameTarget.both,
+                            label: Text('全部'),
+                            icon: Icon(Icons.all_inclusive, size: 16),
                           ),
                         ],
-                        selected: {
-                          if (_isTargetFile) 'file',
-                          if (_isTargetFolder) 'folder',
-                        },
+                        selected: {_target},
                         onSelectionChanged: (newSelection) {
                           setState(() {
-                            _isTargetFile = newSelection.contains('file');
-                            _isTargetFolder = newSelection.contains('folder');
+                            _target = newSelection.first;
                             _triggerChanged();
                           });
                         },
-                        style: const ButtonStyle(
+                        style: ButtonStyle(
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          backgroundColor:
+                              WidgetStateProperty.resolveWith<Color?>((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return Colors.indigo.withOpacity(0.2);
+                            }
+                            return null;
+                          }),
+                          foregroundColor:
+                              WidgetStateProperty.resolveWith<Color?>((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return Colors.indigoAccent;
+                            }
+                            return null;
+                          }),
                         ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Recursive Switch
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -321,7 +357,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                     ),
                   ],
                 ),
-                
+
                 // Extension filter (Only for files)
                 if (_isTargetFile) ...[
                   const SizedBox(height: 8),
@@ -338,9 +374,9 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
             ),
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Tab header for Rules
         TabBar(
           controller: _tabController,
@@ -354,7 +390,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
           ],
         ),
         const SizedBox(height: 16),
-        
+
         // Tab body for Rules
         SizedBox(
           height: 440,
@@ -404,7 +440,9 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 onTypeChanged: (type) {
                   setState(() {
                     _selectedInsertSepType = type;
-                    final newSep = type == 'custom' ? _insertSeparatorCustomController.text : type;
+                    final newSep = type == 'custom'
+                        ? _insertSeparatorCustomController.text
+                        : type;
                     _rule = _rule.copyWith(
                       insertRule: _rule.insertRule.copyWith(separator: newSep),
                     );
@@ -413,21 +451,40 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 },
               ),
               const SizedBox(height: 16),
-              Text('插入位置:', style: TextStyle(color: context.textColorSecondary)),
+              Text('插入位置:',
+                  style: TextStyle(color: context.textColorSecondary)),
               const SizedBox(height: 8),
               SegmentedButton<InsertPosition>(
                 segments: const [
                   ButtonSegment(value: InsertPosition.start, label: Text('开头')),
                   ButtonSegment(value: InsertPosition.end, label: Text('结尾')),
-                  ButtonSegment(value: InsertPosition.custom, label: Text('自定义')),
+                  ButtonSegment(
+                      value: InsertPosition.custom, label: Text('自定义')),
                 ],
                 selected: {ins.position},
                 onSelectionChanged: (val) {
                   setState(() {
-                    _rule = _rule.copyWith(insertRule: ins.copyWith(position: val.first));
+                    _rule = _rule.copyWith(
+                        insertRule: ins.copyWith(position: val.first));
                     _triggerChanged();
                   });
                 },
+                style: ButtonStyle(
+                  backgroundColor:
+                      WidgetStateProperty.resolveWith<Color?>((states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return Colors.indigo.withOpacity(0.2);
+                    }
+                    return null;
+                  }),
+                  foregroundColor:
+                      WidgetStateProperty.resolveWith<Color?>((states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return Colors.indigoAccent;
+                    }
+                    return null;
+                  }),
+                ),
               ),
               if (ins.position == InsertPosition.custom) ...[
                 const SizedBox(height: 16),
@@ -436,7 +493,8 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                   style: TextStyle(color: context.textColorPrimary),
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: _buildInputDecoration('插入位置索引 (0-based)', hint: '例如: 3 表示在第3个字符处插入'),
+                  decoration: _buildInputDecoration('插入位置索引 (0-based)',
+                      hint: '例如: 3 表示在第3个字符处插入'),
                 ),
               ],
             ],
@@ -464,7 +522,8 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
             }),
             const SizedBox(height: 12),
             if (del.enabled) ...[
-              Text('删除模式:', style: TextStyle(color: context.textColorSecondary)),
+              Text('删除模式:',
+                  style: TextStyle(color: context.textColorSecondary)),
               const SizedBox(height: 8),
               DropdownButtonFormField<DeleteMode>(
                 value: del.mode,
@@ -472,36 +531,43 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 style: TextStyle(color: context.textColorPrimary),
                 decoration: _buildInputDecoration('选择删除模式'),
                 items: const [
-                  DropdownMenuItem(value: DeleteMode.match, child: Text('匹配内容删除')),
-                  DropdownMenuItem(value: DeleteMode.rangeEnds, child: Text('开头/结尾字符删除')),
-                  DropdownMenuItem(value: DeleteMode.rangeCustom, child: Text('自定义区间删除')),
-                  DropdownMenuItem(value: DeleteMode.anchor, child: Text('定位字符前后删除')),
+                  DropdownMenuItem(
+                      value: DeleteMode.match, child: Text('匹配内容删除')),
+                  DropdownMenuItem(
+                      value: DeleteMode.rangeEnds, child: Text('开头/结尾字符删除')),
+                  DropdownMenuItem(
+                      value: DeleteMode.rangeCustom, child: Text('自定义区间删除')),
+                  DropdownMenuItem(
+                      value: DeleteMode.anchor, child: Text('定位字符前后删除')),
                 ],
                 onChanged: (mode) {
                   if (mode != null) {
                     setState(() {
-                      _rule = _rule.copyWith(deleteRule: del.copyWith(mode: mode));
+                      _rule =
+                          _rule.copyWith(deleteRule: del.copyWith(mode: mode));
                       _triggerChanged();
                     });
                   }
                 },
               ),
               const SizedBox(height: 16),
-              
+
               // 1. Match Mode Inputs
               if (del.mode == DeleteMode.match) ...[
                 TextField(
                   controller: _deleteMatchController,
                   style: TextStyle(color: context.textColorPrimary),
-                  decoration: _buildInputDecoration('要删除的内容', hint: '输入被匹配的关键字'),
+                  decoration:
+                      _buildInputDecoration('要删除的内容', hint: '输入被匹配的关键字'),
                 ),
               ],
-              
+
               // 2. Range Ends Mode Inputs
               if (del.mode == DeleteMode.rangeEnds) ...[
                 Row(
                   children: [
-                    Text('方向:', style: TextStyle(color: context.textColorSecondary)),
+                    Text('方向:',
+                        style: TextStyle(color: context.textColorSecondary)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: SegmentedButton<bool>(
@@ -512,10 +578,27 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                         selected: {del.fromStart},
                         onSelectionChanged: (val) {
                           setState(() {
-                            _rule = _rule.copyWith(deleteRule: del.copyWith(fromStart: val.first));
+                            _rule = _rule.copyWith(
+                                deleteRule: del.copyWith(fromStart: val.first));
                             _triggerChanged();
                           });
                         },
+                        style: ButtonStyle(
+                          backgroundColor:
+                              WidgetStateProperty.resolveWith<Color?>((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return Colors.indigo.withOpacity(0.2);
+                            }
+                            return null;
+                          }),
+                          foregroundColor:
+                              WidgetStateProperty.resolveWith<Color?>((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return Colors.indigoAccent;
+                            }
+                            return null;
+                          }),
+                        ),
                       ),
                     ),
                   ],
@@ -529,7 +612,7 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                   decoration: _buildInputDecoration('删除字符个数', hint: '要删除的字符数量'),
                 ),
               ],
-              
+
               // 3. Range Custom Mode Inputs
               if (del.mode == DeleteMode.rangeCustom) ...[
                 Row(
@@ -539,20 +622,25 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                         controller: _deleteStartController,
                         style: TextStyle(color: context.textColorPrimary),
                         keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
                         decoration: _buildInputDecoration('起始索引 (0-based)'),
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text('至', style: TextStyle(color: context.textColorSecondary)),
+                      child: Text('至',
+                          style: TextStyle(color: context.textColorSecondary)),
                     ),
                     Expanded(
                       child: TextField(
                         controller: _deleteEndController,
                         style: TextStyle(color: context.textColorPrimary),
                         keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
                         decoration: _buildInputDecoration('结束索引 (0-based)'),
                       ),
                     ),
@@ -561,10 +649,11 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 const SizedBox(height: 8),
                 Text(
                   '注意：区间为闭区间，如：1至3会删除第1, 2, 3个字符',
-                  style: TextStyle(color: context.textColorSecondary, fontSize: 12),
+                  style: TextStyle(
+                      color: context.textColorSecondary, fontSize: 12),
                 ),
               ],
-              
+
               // 4. Anchor Mode Inputs
               if (del.mode == DeleteMode.anchor) ...[
                 TextField(
@@ -576,34 +665,59 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Text('删除方向:', style: TextStyle(color: context.textColorSecondary)),
+                    Text('删除方向:',
+                        style: TextStyle(color: context.textColorSecondary)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: SegmentedButton<DeleteDirection>(
                         segments: const [
-                          ButtonSegment(value: DeleteDirection.before, label: Text('删除前侧')),
-                          ButtonSegment(value: DeleteDirection.after, label: Text('删除后侧')),
+                          ButtonSegment(
+                              value: DeleteDirection.before,
+                              label: Text('删除前侧')),
+                          ButtonSegment(
+                              value: DeleteDirection.after,
+                              label: Text('删除后侧')),
                         ],
                         selected: {del.direction},
                         onSelectionChanged: (val) {
                           setState(() {
-                            _rule = _rule.copyWith(deleteRule: del.copyWith(direction: val.first));
+                            _rule = _rule.copyWith(
+                                deleteRule: del.copyWith(direction: val.first));
                             _triggerChanged();
                           });
                         },
+                        style: ButtonStyle(
+                          backgroundColor:
+                              WidgetStateProperty.resolveWith<Color?>((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return Colors.indigo.withOpacity(0.2);
+                            }
+                            return null;
+                          }),
+                          foregroundColor:
+                              WidgetStateProperty.resolveWith<Color?>((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return Colors.indigoAccent;
+                            }
+                            return null;
+                          }),
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 CheckboxListTile(
-                  title: Text('删除定位字符本身', style: TextStyle(color: context.textColorPrimary)),
+                  title: Text('删除定位字符本身',
+                      style: TextStyle(color: context.textColorPrimary)),
                   value: del.includeAnchor,
                   activeColor: Colors.indigoAccent,
                   checkColor: Colors.white,
                   onChanged: (val) {
                     setState(() {
-                      _rule = _rule.copyWith(deleteRule: del.copyWith(includeAnchor: val ?? false));
+                      _rule = _rule.copyWith(
+                          deleteRule:
+                              del.copyWith(includeAnchor: val ?? false));
                       _triggerChanged();
                     });
                   },
@@ -630,7 +744,8 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
           children: [
             _buildSwitchHeader('启用父目录名规则', pdir.enabled, (val) {
               setState(() {
-                _rule = _rule.copyWith(parentDirRule: pdir.copyWith(enabled: val));
+                _rule =
+                    _rule.copyWith(parentDirRule: pdir.copyWith(enabled: val));
                 _triggerChanged();
               });
             }),
@@ -638,7 +753,8 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
             if (pdir.enabled) ...[
               Text(
                 '直接父文件夹名称将插入到新文件名中。',
-                style: TextStyle(color: context.textColorSecondary, fontSize: 13),
+                style:
+                    TextStyle(color: context.textColorSecondary, fontSize: 13),
               ),
               const SizedBox(height: 16),
               _buildSeparatorSection(
@@ -647,30 +763,52 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
                 onTypeChanged: (type) {
                   setState(() {
                     _selectedParentDirSepType = type;
-                    final newSep = type == 'custom' ? _parentDirSeparatorCustomController.text : type;
+                    final newSep = type == 'custom'
+                        ? _parentDirSeparatorCustomController.text
+                        : type;
                     _rule = _rule.copyWith(
-                      parentDirRule: _rule.parentDirRule.copyWith(separator: newSep),
+                      parentDirRule:
+                          _rule.parentDirRule.copyWith(separator: newSep),
                     );
                     _triggerChanged();
                   });
                 },
               ),
               const SizedBox(height: 16),
-              Text('插入位置:', style: TextStyle(color: context.textColorSecondary)),
+              Text('插入位置:',
+                  style: TextStyle(color: context.textColorSecondary)),
               const SizedBox(height: 8),
               SegmentedButton<InsertPosition>(
                 segments: const [
                   ButtonSegment(value: InsertPosition.start, label: Text('开头')),
                   ButtonSegment(value: InsertPosition.end, label: Text('结尾')),
-                  ButtonSegment(value: InsertPosition.custom, label: Text('自定义')),
+                  ButtonSegment(
+                      value: InsertPosition.custom, label: Text('自定义')),
                 ],
                 selected: {pdir.position},
                 onSelectionChanged: (val) {
                   setState(() {
-                    _rule = _rule.copyWith(parentDirRule: pdir.copyWith(position: val.first));
+                    _rule = _rule.copyWith(
+                        parentDirRule: pdir.copyWith(position: val.first));
                     _triggerChanged();
                   });
                 },
+                style: ButtonStyle(
+                  backgroundColor:
+                      WidgetStateProperty.resolveWith<Color?>((states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return Colors.indigo.withOpacity(0.2);
+                    }
+                    return null;
+                  }),
+                  foregroundColor:
+                      WidgetStateProperty.resolveWith<Color?>((states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return Colors.indigoAccent;
+                    }
+                    return null;
+                  }),
+                ),
               ),
               if (pdir.position == InsertPosition.custom) ...[
                 const SizedBox(height: 16),
@@ -706,7 +844,8 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('分隔符:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
+        Text('分隔符:',
+            style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8.0,
@@ -732,7 +871,9 @@ class _RenameRulePanelState extends State<RenameRulePanel> with SingleTickerProv
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
                 side: BorderSide(
-                  color: isSelected ? Colors.indigoAccent : context.inputBorderColor,
+                  color: isSelected
+                      ? Colors.indigoAccent
+                      : context.inputBorderColor,
                   width: 1,
                 ),
               ),
