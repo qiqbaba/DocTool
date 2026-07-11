@@ -12,19 +12,23 @@ class HashCacheManager {
   File? _cacheFile;
   bool _initialized = false;
 
-  /// Initialize the cache by loading hash_cache.json from local app directory
-  Future<void> init() async {
-    if (_initialized) return;
+  /// Initialize the cache by loading hash_cache.json from local app directory.
+  /// If [forceReload] is true, reloads from disk even if already initialized.
+  Future<void> init({bool forceReload = false}) async {
+    if (_initialized && !forceReload) return;
     try {
       final dir = await getApplicationSupportDirectory();
       _cacheFile = File('${dir.path}/hash_cache.json');
       if (await _cacheFile!.exists()) {
         final content = await _cacheFile!.readAsString();
-        final decoded = jsonDecode(content);
-        if (decoded is Map) {
-          _cache = decoded.map((key, value) {
-            return MapEntry(key.toString(), Map<String, dynamic>.from(value as Map));
-          });
+        if (content.trim().isNotEmpty) {
+          final decoded = jsonDecode(content);
+          if (decoded is Map) {
+            _cache = decoded.map((key, value) {
+              return MapEntry(
+                  key.toString(), Map<String, dynamic>.from(value as Map));
+            });
+          }
         }
       }
     } catch (e) {
@@ -33,10 +37,17 @@ class HashCacheManager {
     _initialized = true;
   }
 
+  /// Reset initialization flag so next [init()] call reloads from disk.
+  void invalidate() {
+    _initialized = false;
+  }
+
   /// Get MD5 hash if cache is hit and file stats match
   String? getMd5(String path, int size, int lastModifiedMs) {
     final entry = _cache[path];
-    if (entry != null && entry['size'] == size && entry['mtime'] == lastModifiedMs) {
+    if (entry != null &&
+        entry['size'] == size &&
+        entry['mtime'] == lastModifiedMs) {
       return entry['md5'] as String?;
     }
     return null;
@@ -45,14 +56,17 @@ class HashCacheManager {
   /// Get Quick Hash if cache is hit and file stats match
   String? getQuickHash(String path, int size, int lastModifiedMs) {
     final entry = _cache[path];
-    if (entry != null && entry['size'] == size && entry['mtime'] == lastModifiedMs) {
+    if (entry != null &&
+        entry['size'] == size &&
+        entry['mtime'] == lastModifiedMs) {
       return entry['quickHash'] as String?;
     }
     return null;
   }
 
   /// Set cache values
-  void set(String path, int size, int lastModifiedMs, {String? md5, String? quickHash}) {
+  void set(String path, int size, int lastModifiedMs,
+      {String? md5, String? quickHash}) {
     final entry = _cache[path] ?? {};
     entry['size'] = size;
     entry['mtime'] = lastModifiedMs;

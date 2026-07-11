@@ -1,13 +1,14 @@
 import 'dart:io';
 import 'dart:async';
-import 'dart:isolate';
-import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'hash_cache_manager.dart';
+import 'file_hash_utils.dart';
 
 enum DeleteTarget { file, folder, both }
+
 enum SizeCondition { any, greaterThan, lessThan, equalTo }
+
 enum TimeCondition { any, beforeDate, afterDate, olderThanDays }
 
 class DeleteFilterRule {
@@ -15,21 +16,21 @@ class DeleteFilterRule {
   final String extensionFilter; // comma-separated e.g. "mp4, txt"
   final String nameContains;
   final bool caseSensitive;
-  
+
   // Size Filter
   final SizeCondition sizeCondition;
   final int sizeValueBytes; // converted to bytes
-  
+
   // Hash Filter
   final String targetHash; // MD5 string (trimmed)
   final int? targetHashSize; // Filesize of target hash for quick filtering
   final int maxThreads; // Max concurrency threads for hashing (0 = adaptive)
-  
+
   // Special/Shortcut Filters
   final bool emptyFilesOnly;
   final bool emptyFoldersOnly;
   final bool duplicateFilesOnly;
-  
+
   // Time Filter
   final TimeCondition timeCondition;
   final DateTime? timeDate;
@@ -98,8 +99,9 @@ class DeleteItem {
   final int size; // bytes
   final DateTime lastModified;
   String? md5Hash;
-  String? quickHash; // Quick hash for partial content match (e.g. first/last 8KB)
-  
+  String?
+      quickHash; // Quick hash for partial content match (e.g. first/last 8KB)
+
   bool isSelected;
   String matchReason;
   bool isDeleted;
@@ -122,278 +124,51 @@ class DeleteItem {
 }
 
 class DeleteLogic {
-  /// Background isolate static method for MD5 calculation
-  static Future<String> _isolateCalculateMd5(String path) async {
-    try {
-      final file = File(path);
-      if (!file.existsSync()) return '';
-      final stream = file.openRead();
-      final hash = await md5.bind(stream).first;
-      return hash.toString();
-    } catch (e) {
-      return '';
-    }
-  }
-
-  /// Helper to run the MD5 calculation in an isolate without capturing async contexts.
-  /// This avoids "object is unsendable" runtime errors with _AsyncCompleter.
-  static Future<String> _computeMd5Directly(String path) {
-    return Isolate.run(() => _isolateCalculateMd5(path));
-  }
-
-  /// Background isolate static method for Quick Hash (MD5 of first/last 8KB) calculation
-  static Future<String> _isolateCalculateQuickHash(String path) async {
-    try {
-      final file = File(path);
-      if (!file.existsSync()) return '';
-      final size = await file.length();
-      final raf = await file.open(mode: FileMode.read);
-      
-      final int headerSize = size > 8192 ? 8192 : size;
-      final headerBytes = await raf.read(headerSize);
-      
-      List<int> footerBytes = [];
-      if (size > 8192) {
-        await raf.setPosition(size - 8192);
-        footerBytes = await raf.read(8192);
-      }
-      await raf.close();
-      
-      final combined = [...headerBytes, ...footerBytes];
-      final hash = md5.convert(combined);
-      return hash.toString();
-    } catch (e) {
-      return '';
-    }
-  }
-
-  static Future<String> _computeQuickHashDirectly(String path) {
-    return Isolate.run(() => _isolateCalculateQuickHash(path));
-  }
-
-  /// Parallel calculate MD5 for multiple files with concurrency limit
+  /// Parallel calculate MD5 for multiple files with concurrency limit.
+  /// Delegates to [FileHashUtils] for implementation.
   static Future<Map<String, String>> calculateMd5ForFilesParallel(
     List<File> files, {
     int? concurrencyLimit,
     void Function(int completed, int total)? onProgress,
-  }) async {
-    final Map<String, String> results = {};
-    if (files.isEmpty) return results;
-
-    final cache = HashCacheManager();
-    final List<File> needCompute = [];
-    
-    // 1. Check cache first
-    for (var file in files) {
-      try {
-        final path = file.path;
-        final size = await file.length();
-        final stat = await file.stat();
-        final mtime = stat.modified.millisecondsSinceEpoch;
-        final cached = cache.getMd5(path, size, mtime);
-        if (cached != null && cached.isNotEmpty) {
-          results[path] = cached;
-        } else {
-          needCompute.add(file);
-        }
-      } catch (e) {
-        results[file.path] = '';
-      }
-    }
-
-    int completedCount = files.length - needCompute.length;
-    onProgress?.call(completedCount, files.length);
-
-    if (needCompute.isEmpty) {
-      return results;
-    }
-
-    final int maxConcurrency = concurrencyLimit ?? Platform.numberOfProcessors;
-    final completer = Completer<Map<String, String>>();
-    int activeCount = 0;
-    int taskIndex = 0;
-
-    void runNext() async {
-      if (taskIndex >= needCompute.length) {
-        if (activeCount == 0 && !completer.isCompleted) {
-          completer.complete(results);
-        }
-        return;
-      }
-
-      final file = needCompute[taskIndex++];
-      activeCount++;
-
-      try {
-        final path = file.path;
-        final hash = await _computeMd5Directly(path);
-        results[path] = hash;
-        
-        // Save to cache
-        final size = await file.length();
-        final stat = await file.stat();
-        final mtime = stat.modified.millisecondsSinceEpoch;
-        cache.set(path, size, mtime, md5: hash);
-      } catch (e) {
-        debugPrint('Error in parallel MD5 calculation: $e');
-        results[file.path] = '';
-      } finally {
-        activeCount--;
-        completedCount++;
-        onProgress?.call(completedCount, files.length);
-        runNext();
-      }
-    }
-
-    final initialBatch = maxConcurrency < needCompute.length ? maxConcurrency : needCompute.length;
-    for (int i = 0; i < initialBatch; i++) {
-      runNext();
-    }
-
-    return completer.future;
+  }) {
+    return FileHashUtils.calculateMd5ForFilesParallel(
+      files,
+      concurrencyLimit: concurrencyLimit,
+      onProgress: onProgress,
+    );
   }
 
-  /// Parallel calculate Quick Hash for multiple files with concurrency limit
+  /// Parallel calculate Quick Hash for multiple files with concurrency limit.
   static Future<Map<String, String>> calculateQuickHashForFilesParallel(
     List<File> files, {
     int? concurrencyLimit,
     void Function(int completed, int total)? onProgress,
-  }) async {
-    final Map<String, String> results = {};
-    if (files.isEmpty) return results;
-
-    final cache = HashCacheManager();
-    final List<File> needCompute = [];
-    
-    // 1. Check cache first
-    for (var file in files) {
-      try {
-        final path = file.path;
-        final size = await file.length();
-        final stat = await file.stat();
-        final mtime = stat.modified.millisecondsSinceEpoch;
-        final cached = cache.getQuickHash(path, size, mtime);
-        if (cached != null && cached.isNotEmpty) {
-          results[path] = cached;
-        } else {
-          needCompute.add(file);
-        }
-      } catch (e) {
-        results[file.path] = '';
-      }
-    }
-
-    int completedCount = files.length - needCompute.length;
-    onProgress?.call(completedCount, files.length);
-
-    if (needCompute.isEmpty) {
-      return results;
-    }
-
-    final int maxConcurrency = concurrencyLimit ?? Platform.numberOfProcessors;
-    final completer = Completer<Map<String, String>>();
-    int activeCount = 0;
-    int taskIndex = 0;
-
-    void runNext() async {
-      if (taskIndex >= needCompute.length) {
-        if (activeCount == 0 && !completer.isCompleted) {
-          completer.complete(results);
-        }
-        return;
-      }
-
-      final file = needCompute[taskIndex++];
-      activeCount++;
-
-      try {
-        final path = file.path;
-        final hash = await _computeQuickHashDirectly(path);
-        results[path] = hash;
-        
-        // Save to cache
-        final size = await file.length();
-        final stat = await file.stat();
-        final mtime = stat.modified.millisecondsSinceEpoch;
-        cache.set(path, size, mtime, quickHash: hash);
-      } catch (e) {
-        debugPrint('Error in parallel Quick Hash calculation: $e');
-        results[file.path] = '';
-      } finally {
-        activeCount--;
-        completedCount++;
-        onProgress?.call(completedCount, files.length);
-        runNext();
-      }
-    }
-
-    final initialBatch = maxConcurrency < needCompute.length ? maxConcurrency : needCompute.length;
-    for (int i = 0; i < initialBatch; i++) {
-      runNext();
-    }
-
-    return completer.future;
+  }) {
+    return FileHashUtils.calculateQuickHashForFilesParallel(
+      files,
+      concurrencyLimit: concurrencyLimit,
+      onProgress: onProgress,
+    );
   }
 
-  /// Calculate the MD5 hash of a file efficiently using a background Isolate
-  static Future<String> calculateFileMd5(File file) async {
-    try {
-      return await _computeMd5Directly(file.path);
-    } catch (e) {
-      debugPrint('Error computing MD5 for ${file.path}: $e');
-      return '';
-    }
+  /// Calculate the MD5 hash of a file.
+  static Future<String> calculateFileMd5(File file) {
+    return FileHashUtils.calculateFileMd5(file);
   }
 
-  /// Detect if target path resides on a spinning Hard Disk Drive (HDD) on Windows
-  static Future<bool> isDriveHDD(String path) async {
-    if (!Platform.isWindows) return false;
-    try {
-      String driveLetter = 'C';
-      if (path.length >= 2 && path[1] == ':') {
-        driveLetter = path[0].toUpperCase();
-      }
-      final result = await Process.run('powershell', [
-        '-Command',
-        'Get-PhysicalDisk | Where-Object { \$_.DeviceID -eq (Get-Partition -DriveLetter $driveLetter | Get-Disk).Number } | Select-Object -ExpandProperty MediaType'
-      ]);
-      if (result.exitCode == 0) {
-        final out = result.stdout.toString().trim().toUpperCase();
-        if (out.contains('HDD')) {
-          return true;
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to detect disk type: $e');
-    }
-    return false;
+  /// Detect if target path resides on a spinning Hard Disk Drive (HDD) on Windows.
+  static Future<bool> isDriveHDD(String path) {
+    return FileHashUtils.isDriveHDD(path);
   }
 
-  /// Check if a directory is empty (has no child files or directories)
-  static Future<bool> isDirectoryEmpty(Directory dir) async {
-    try {
-      final list = await dir.list(recursive: false, followLinks: false).take(1).toList();
-      return list.isEmpty;
-    } catch (e) {
-      return true;
-    }
+  /// Check if a directory is empty.
+  static Future<bool> isDirectoryEmpty(Directory dir) {
+    return FileHashUtils.isDirectoryEmpty(dir);
   }
 
-  /// Get the total size of a directory recursively
-  static Future<int> getDirectorySize(Directory dir) async {
-    int totalSize = 0;
-    try {
-      if (await dir.exists()) {
-        await for (final entity in dir.list(recursive: true, followLinks: false)) {
-          if (entity is File) {
-            totalSize += await entity.length();
-          }
-        }
-      }
-    } catch (e) {
-      // Ignore reading errors on nested items
-    }
-    return totalSize;
+  /// Get the total size of a directory recursively.
+  static Future<int> getDirectorySize(Directory dir) {
+    return FileHashUtils.getDirectorySize(dir);
   }
 
   /// Scan the folder and apply rules to filter items to be deleted
@@ -424,13 +199,15 @@ class DeleteLogic {
       // Adaptive thread selection: detect if disk is HDD on Windows
       final isHDD = await isDriveHDD(rootPath);
       if (isHDD) {
-        threads = 1; // Limit to 1 thread for spinning HDD to avoid disk thrashing
+        threads =
+            1; // Limit to 1 thread for spinning HDD to avoid disk thrashing
       }
     }
 
     // Process extension filter
     List<String> allowedExtensions = [];
-    if (rule.extensionFilter.trim().isNotEmpty && rule.extensionFilter.trim() != '*') {
+    if (rule.extensionFilter.trim().isNotEmpty &&
+        rule.extensionFilter.trim() != '*') {
       allowedExtensions = rule.extensionFilter
           .split(',')
           .map((ext) {
@@ -470,14 +247,14 @@ class DeleteLogic {
 
       for (int i = 0; i < entities.length; i++) {
         final entity = entities[i];
-        
+
         if (i % 20 == 0 || i == entities.length - 1) {
           final progress = (i / entities.length) * (w1 / totalWeight);
           onProgress?.call(progress, '正在分析文件属性: ${i + 1}/${entities.length}');
         }
         final path = entity.path;
         final name = p.basename(path);
-        
+
         // Never delete the root directory itself!
         if (p.equals(path, rootPath)) {
           continue;
@@ -510,7 +287,9 @@ class DeleteLogic {
 
           // 2. Name contains
           if (matched && rule.nameContains.isNotEmpty) {
-            final matchText = rule.caseSensitive ? rule.nameContains : rule.nameContains.toLowerCase();
+            final matchText = rule.caseSensitive
+                ? rule.nameContains
+                : rule.nameContains.toLowerCase();
             final testName = rule.caseSensitive ? name : name.toLowerCase();
             if (!testName.contains(matchText)) {
               matched = false;
@@ -551,12 +330,15 @@ class DeleteLogic {
               final stat = await entity.stat();
               modified = stat.modified;
               if (rule.timeCondition != TimeCondition.any) {
-                if (rule.timeCondition == TimeCondition.beforeDate && rule.timeDate != null) {
+                if (rule.timeCondition == TimeCondition.beforeDate &&
+                    rule.timeDate != null) {
                   if (!modified.isBefore(rule.timeDate!)) matched = false;
-                } else if (rule.timeCondition == TimeCondition.afterDate && rule.timeDate != null) {
+                } else if (rule.timeCondition == TimeCondition.afterDate &&
+                    rule.timeDate != null) {
                   if (!modified.isAfter(rule.timeDate!)) matched = false;
                 } else if (rule.timeCondition == TimeCondition.olderThanDays) {
-                  final cutoff = DateTime.now().subtract(Duration(days: rule.timeDays));
+                  final cutoff =
+                      DateTime.now().subtract(Duration(days: rule.timeDays));
                   if (!modified.isBefore(cutoff)) matched = false;
                 }
                 if (matched) {
@@ -618,7 +400,9 @@ class DeleteLogic {
 
           // 3. Name contains
           if (matched && rule.nameContains.isNotEmpty) {
-            final matchText = rule.caseSensitive ? rule.nameContains : rule.nameContains.toLowerCase();
+            final matchText = rule.caseSensitive
+                ? rule.nameContains
+                : rule.nameContains.toLowerCase();
             final testName = rule.caseSensitive ? name : name.toLowerCase();
             if (!testName.contains(matchText)) {
               matched = false;
@@ -649,12 +433,15 @@ class DeleteLogic {
 
           // 5. Time condition
           if (matched && rule.timeCondition != TimeCondition.any) {
-            if (rule.timeCondition == TimeCondition.beforeDate && rule.timeDate != null) {
+            if (rule.timeCondition == TimeCondition.beforeDate &&
+                rule.timeDate != null) {
               if (!modified.isBefore(rule.timeDate!)) matched = false;
-            } else if (rule.timeCondition == TimeCondition.afterDate && rule.timeDate != null) {
+            } else if (rule.timeCondition == TimeCondition.afterDate &&
+                rule.timeDate != null) {
               if (!modified.isAfter(rule.timeDate!)) matched = false;
             } else if (rule.timeCondition == TimeCondition.olderThanDays) {
-              final cutoff = DateTime.now().subtract(Duration(days: rule.timeDays));
+              final cutoff =
+                  DateTime.now().subtract(Duration(days: rule.timeDays));
               if (!modified.isBefore(cutoff)) matched = false;
             }
             if (matched) {
@@ -676,7 +463,8 @@ class DeleteLogic {
             // 6. Hash filter (MD5) - defer computation and perform in batch parallel
             if (rule.targetHash.trim().isNotEmpty) {
               // Apply Size Pre-filtering optimization: if targetHashSize is specified, only hash files with matching sizes!
-              if (rule.targetHashSize == null || fileSize == rule.targetHashSize) {
+              if (rule.targetHashSize == null ||
+                  fileSize == rule.targetHashSize) {
                 pendingHashFilterItems.add(item);
               }
             } else {
@@ -695,14 +483,16 @@ class DeleteLogic {
 
       // Process deferred hash filtering concurrently using adaptive thread-pool
       if (pendingHashFilterItems.isNotEmpty) {
-        final List<File> filesToHash = pendingHashFilterItems.map((item) => item.entity as File).toList();
+        final List<File> filesToHash =
+            pendingHashFilterItems.map((item) => item.entity as File).toList();
         final md5Map = await calculateMd5ForFilesParallel(
           filesToHash,
           concurrencyLimit: threads,
           onProgress: (completed, total) {
             final double phaseStart = w1 / totalWeight;
             final double phaseWeight = w2 / totalWeight;
-            final double progress = phaseStart + (completed / total) * phaseWeight;
+            final double progress =
+                phaseStart + (completed / total) * phaseWeight;
             onProgress?.call(progress, '正在校验文件哈希值: $completed/$total');
           },
         );
@@ -711,7 +501,8 @@ class DeleteLogic {
         for (var item in pendingHashFilterItems) {
           final hash = md5Map[item.path] ?? '';
           if (hash == targetHashLower) {
-            final reasonsList = item.matchReason.isEmpty ? [] : item.matchReason.split(', ');
+            final reasonsList =
+                item.matchReason.isEmpty ? [] : item.matchReason.split(', ');
             reasonsList.add('MD5哈希值匹配');
             item.matchReason = reasonsList.join(', ');
 
@@ -744,18 +535,21 @@ class DeleteLogic {
         }
 
         if (filesToQuickHash.isNotEmpty) {
-          final List<File> filesToHash = filesToQuickHash.map((item) => item.entity as File).toList();
+          final List<File> filesToHash =
+              filesToQuickHash.map((item) => item.entity as File).toList();
           final quickHashMap = await calculateQuickHashForFilesParallel(
             filesToHash,
             concurrencyLimit: threads,
             onProgress: (completed, total) {
               final double phaseStart = (w1 + w2) / totalWeight;
-              final double phaseWeight = (w3 * 0.4) / totalWeight; // 40% of phase 3
-              final double progress = phaseStart + (completed / total) * phaseWeight;
+              final double phaseWeight =
+                  (w3 * 0.4) / totalWeight; // 40% of phase 3
+              final double progress =
+                  phaseStart + (completed / total) * phaseWeight;
               onProgress?.call(progress, '正在校验重复文件特征码: $completed/$total');
             },
           );
-          
+
           for (var file in filesToQuickHash) {
             file.quickHash = quickHashMap[file.path] ?? '';
           }
@@ -764,7 +558,9 @@ class DeleteLogic {
         // Group candidate files by size and quick hash
         final Map<String, List<DeleteItem>> sizeQuickHashGroups = {};
         for (var file in candidateFiles) {
-          if (file.size > 0 && file.quickHash != null && file.quickHash!.isNotEmpty) {
+          if (file.size > 0 &&
+              file.quickHash != null &&
+              file.quickHash!.isNotEmpty) {
             final key = '${file.size}_${file.quickHash}';
             sizeQuickHashGroups.putIfAbsent(key, () => []).add(file);
           }
@@ -779,18 +575,21 @@ class DeleteLogic {
         }
 
         if (filesToFullHash.isNotEmpty) {
-          final List<File> filesToHash = filesToFullHash.map((item) => item.entity as File).toList();
+          final List<File> filesToHash =
+              filesToFullHash.map((item) => item.entity as File).toList();
           final md5Map = await calculateMd5ForFilesParallel(
             filesToHash,
             concurrencyLimit: threads,
             onProgress: (completed, total) {
               final double phaseStart = (w1 + w2 + w3 * 0.4) / totalWeight;
-              final double phaseWeight = (w3 * 0.6) / totalWeight; // 60% of phase 3
-              final double progress = phaseStart + (completed / total) * phaseWeight;
+              final double phaseWeight =
+                  (w3 * 0.6) / totalWeight; // 60% of phase 3
+              final double progress =
+                  phaseStart + (completed / total) * phaseWeight;
               onProgress?.call(progress, '正在计算重复文件完整哈希: $completed/$total');
             },
           );
-          
+
           for (var file in filesToFullHash) {
             file.md5Hash = md5Map[file.path] ?? '';
           }
@@ -799,7 +598,9 @@ class DeleteLogic {
         // Re-group by size and full MD5 hash to detect actual duplicates
         final Map<String, List<DeleteItem>> finalMd5Groups = {};
         for (var file in candidateFiles) {
-          if (file.size > 0 && file.md5Hash != null && file.md5Hash!.isNotEmpty) {
+          if (file.size > 0 &&
+              file.md5Hash != null &&
+              file.md5Hash!.isNotEmpty) {
             final key = '${file.size}_${file.md5Hash}';
             finalMd5Groups.putIfAbsent(key, () => []).add(file);
           }
@@ -810,7 +611,7 @@ class DeleteLogic {
           if (md5Group.length > 1) {
             // Sort by last modified date ascending (oldest first)
             md5Group.sort((a, b) => a.lastModified.compareTo(b.lastModified));
-            
+
             // Keep the first (oldest) one: set isSelected = false, matchReason = Keep
             final oldest = md5Group.first;
             items.add(DeleteItem(
@@ -866,7 +667,8 @@ class DeleteLogic {
   /// Execute the batch deletion
   static Future<void> executeDelete(
     List<DeleteItem> items, {
-    required void Function(int index, double progress, DeleteItem item) onItemComplete,
+    required void Function(int index, double progress, DeleteItem item)
+        onItemComplete,
     required void Function() onAllComplete,
   }) async {
     if (items.isEmpty) {
