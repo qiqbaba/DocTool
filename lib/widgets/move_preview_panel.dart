@@ -16,6 +16,7 @@ class MovePreviewPanel extends StatefulWidget {
   final VoidCallback onMoveStarted;
   final VoidCallback onMoveCompleted;
   final VoidCallback? onSearch;
+  final ValueChanged<String>? onItemSelectionChanged;
 
   const MovePreviewPanel({
     super.key,
@@ -30,6 +31,7 @@ class MovePreviewPanel extends StatefulWidget {
     required this.onMoveStarted,
     required this.onMoveCompleted,
     this.onSearch,
+    this.onItemSelectionChanged,
   });
 
   @override
@@ -111,11 +113,10 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
   }
 
   void _toggleSelectAll(bool? value) {
-    setState(() {
-      for (var item in widget.items) {
-        item.isSelected = value ?? false;
-      }
-    });
+    for (var item in widget.items) {
+      item.isSelected = value ?? false;
+      widget.onItemSelectionChanged?.call(item.path);
+    }
   }
 
   Future<void> _startMoveProcess() async {
@@ -343,7 +344,7 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
         side: BorderSide(color: context.borderColor),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -356,17 +357,9 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '待移动项目队列',
-                        style: TextStyle(
-                            color: context.textColorPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
                         '扫描到 ${widget.items.length} 个项目，已选择 $_selectedCount 个，预计移动空间: ${_formatSize(_selectedSizeSum)}',
                         style: TextStyle(
-                            color: context.textColorSecondary, fontSize: 12),
+                            color: context.textColorPrimary, fontSize: 14),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -422,7 +415,7 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
             // Progress Bar Overlay
             if (_isExecuting) ...[
@@ -656,9 +649,9 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
                                       value: item.isSelected,
                                       activeColor: Colors.orangeAccent,
                                       onChanged: (val) {
-                                        setState(() {
-                                          item.isSelected = val ?? false;
-                                        });
+                                        item.isSelected = val ?? false;
+                                        widget.onItemSelectionChanged
+                                            ?.call(item.path);
                                       },
                                     ),
                                     const SizedBox(width: 4),

@@ -267,7 +267,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
             side: BorderSide(color: context.borderColor),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -278,7 +278,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                       fontWeight: FontWeight.bold,
                       fontSize: 15),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // Object Type Segment
                 Row(
@@ -333,7 +333,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // Recursive Switch
                 Row(
@@ -360,7 +360,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
 
                 // Extension filter (Only for files)
                 if (_isTargetFile) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   TextField(
                     controller: _extController,
                     style: TextStyle(color: context.textColorPrimary),
@@ -375,7 +375,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
 
         // Tab header for Rules
         TabBar(
@@ -389,11 +389,11 @@ class _RenameRulePanelState extends State<RenameRulePanel>
             Tab(text: '插入父目录名', icon: Icon(Icons.folder_shared_outlined)),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
 
         // Tab body for Rules
         SizedBox(
-          height: 440,
+          height: 380,
           child: TabBarView(
             controller: _tabController,
             children: [
@@ -416,7 +416,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
       color: context.cardBg,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: ListView(
           shrinkWrap: true,
           children: [
@@ -426,14 +426,14 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                 _triggerChanged();
               });
             }),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             if (ins.enabled) ...[
               TextField(
                 controller: _insertTextController,
                 style: TextStyle(color: context.textColorPrimary),
                 decoration: _buildInputDecoration('插入内容', hint: '输入要插入的文本'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               _buildSeparatorSection(
                 selectedType: _selectedInsertSepType,
                 customController: _insertSeparatorCustomController,
@@ -450,10 +450,10 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                   });
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               Text('插入位置:',
                   style: TextStyle(color: context.textColorSecondary)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               SegmentedButton<InsertPosition>(
                 segments: const [
                   ButtonSegment(value: InsertPosition.start, label: Text('开头')),
@@ -487,7 +487,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                 ),
               ),
               if (ins.position == InsertPosition.custom) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 TextField(
                   controller: _insertIndexController,
                   style: TextStyle(color: context.textColorPrimary),
@@ -510,7 +510,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
       color: context.cardBg,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: ListView(
           shrinkWrap: true,
           children: [
@@ -520,11 +520,11 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                 _triggerChanged();
               });
             }),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             if (del.enabled) ...[
               Text('删除模式:',
                   style: TextStyle(color: context.textColorSecondary)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               DropdownButtonFormField<DeleteMode>(
                 value: del.mode,
                 dropdownColor: context.cardBg,
@@ -550,7 +550,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                   }
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
               // 1. Match Mode Inputs
               if (del.mode == DeleteMode.match) ...[
@@ -738,7 +738,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
       color: context.cardBg,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: ListView(
           shrinkWrap: true,
           children: [
@@ -749,14 +749,14 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                 _triggerChanged();
               });
             }),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             if (pdir.enabled) ...[
               Text(
                 '直接父文件夹名称将插入到新文件名中。',
                 style:
                     TextStyle(color: context.textColorSecondary, fontSize: 13),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               _buildSeparatorSection(
                 selectedType: _selectedParentDirSepType,
                 customController: _parentDirSeparatorCustomController,
@@ -774,10 +774,10 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                   });
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               Text('插入位置:',
                   style: TextStyle(color: context.textColorSecondary)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               SegmentedButton<InsertPosition>(
                 segments: const [
                   ButtonSegment(value: InsertPosition.start, label: Text('开头')),
@@ -811,7 +811,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                 ),
               ),
               if (pdir.position == InsertPosition.custom) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 TextField(
                   controller: _parentDirIndexController,
                   style: TextStyle(color: context.textColorPrimary),
@@ -846,7 +846,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
       children: [
         Text('分隔符:',
             style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Wrap(
           spacing: 8.0,
           runSpacing: 8.0,

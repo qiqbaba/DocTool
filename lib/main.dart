@@ -357,8 +357,6 @@ class _MainDashboardState extends State<MainDashboard>
     );
   }
 
-
-
   /// Trigger directory scanning for Rename
   Future<void> _scanDirectory() async {
     if (_selectedDirPath.isEmpty) return;
@@ -502,7 +500,9 @@ class _MainDashboardState extends State<MainDashboard>
     setState(() {
       _moveRule = rule;
       _moveRecursive = rule.flattenToRoot ? true : recursive;
-      _targetDirPath = rule.flattenToRoot ? _selectedDirPath : targetDirPath;
+      _targetDirPath = rule.flattenToRoot
+          ? _selectedDirPath
+          : (targetDirPath.isNotEmpty ? targetDirPath : _targetDirPath);
       _conflictStrategy = strategy;
     });
   }
@@ -742,7 +742,7 @@ class _MainDashboardState extends State<MainDashboard>
 
   Widget _buildRenameDesktopView() {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(12.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -753,7 +753,7 @@ class _MainDashboardState extends State<MainDashboard>
               child: Column(
                 children: [
                   _buildDirSelectorCard(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   RenameRulePanel(
                     initialRule: _renameRule,
                     initialIsTargetFile: _renameTarget == RenameTarget.file ||
@@ -779,6 +779,7 @@ class _MainDashboardState extends State<MainDashboard>
               onRenameStarted: () {},
               onRenameCompleted: _scanDirectory,
               onSearch: _selectedDirPath.isNotEmpty ? _scanDirectory : null,
+              onItemSelectionChanged: (_) => setState(() {}),
             ),
           ),
         ],
@@ -788,7 +789,7 @@ class _MainDashboardState extends State<MainDashboard>
 
   Widget _buildDeleteDesktopView() {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(12.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -799,7 +800,7 @@ class _MainDashboardState extends State<MainDashboard>
               child: Column(
                 children: [
                   _buildDirSelectorCard(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   DeleteRulePanel(
                     initialRule: _deleteRule,
                     initialRecursive: _deleteRecursive,
@@ -822,6 +823,7 @@ class _MainDashboardState extends State<MainDashboard>
               onDeleteCompleted: _scanDirectoryForDelete,
               onSearch:
                   _selectedDirPath.isNotEmpty ? _scanDirectoryForDelete : null,
+              onItemSelectionChanged: (_) => setState(() {}),
             ),
           ),
         ],
@@ -831,7 +833,7 @@ class _MainDashboardState extends State<MainDashboard>
 
   Widget _buildMoveDesktopView() {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(12.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -842,7 +844,7 @@ class _MainDashboardState extends State<MainDashboard>
               child: Column(
                 children: [
                   _buildDirSelectorCard(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   MoveRulePanel(
                     initialRule: _moveRule,
                     initialRecursive: _moveRecursive,
@@ -871,6 +873,7 @@ class _MainDashboardState extends State<MainDashboard>
               onMoveCompleted: _scanDirectoryForMove,
               onSearch:
                   _selectedDirPath.isNotEmpty ? _scanDirectoryForMove : null,
+              onItemSelectionChanged: (_) => setState(() {}),
             ),
           ),
         ],
@@ -878,7 +881,6 @@ class _MainDashboardState extends State<MainDashboard>
     );
   }
 
-  /// Android / Mobile Layout
   Widget _buildMobileView() {
     if (_currentTab == 0) {
       return _buildRenameMobileView();
@@ -893,15 +895,17 @@ class _MainDashboardState extends State<MainDashboard>
 
   Widget _buildRenameMobileView() {
     final changedCount = _renameItems
-        .where(
-            (item) => item.isSelected && item.newName != item.baseName && item.newName.isNotEmpty)
+        .where((item) =>
+            item.isSelected &&
+            item.newName != item.baseName &&
+            item.newName.isNotEmpty)
         .length;
 
     return Column(
       children: [
         // Target Dir Selector at Top
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
           child: _buildDirSelectorCard(),
         ),
 
@@ -938,7 +942,7 @@ class _MainDashboardState extends State<MainDashboard>
             children: [
               // Tab 1: Rules Configuration
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: SingleChildScrollView(
                   child: RenameRulePanel(
                     initialRule: _renameRule,
@@ -956,13 +960,14 @@ class _MainDashboardState extends State<MainDashboard>
 
               // Tab 2: Preview Panel
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: PreviewPanel(
                   items: _renameItems,
                   isScanning: _isScanning,
                   onRenameStarted: () {},
                   onRenameCompleted: _scanDirectory,
                   onSearch: _selectedDirPath.isNotEmpty ? _scanDirectory : null,
+                  onItemSelectionChanged: (_) => setState(() {}),
                 ),
               ),
             ],
@@ -980,7 +985,7 @@ class _MainDashboardState extends State<MainDashboard>
       children: [
         // Target Dir Selector at Top
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
           child: _buildDirSelectorCard(),
         ),
 
@@ -1017,7 +1022,7 @@ class _MainDashboardState extends State<MainDashboard>
             children: [
               // Tab 1: Filters Configuration
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: SingleChildScrollView(
                   child: DeleteRulePanel(
                     initialRule: _deleteRule,
@@ -1029,7 +1034,7 @@ class _MainDashboardState extends State<MainDashboard>
 
               // Tab 2: Preview Panel
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: DeletePreviewPanel(
                   items: _deleteItems,
                   isScanning: _isDeletingScan,
@@ -1040,6 +1045,7 @@ class _MainDashboardState extends State<MainDashboard>
                   onSearch: _selectedDirPath.isNotEmpty
                       ? _scanDirectoryForDelete
                       : null,
+                  onItemSelectionChanged: (_) => setState(() {}),
                 ),
               ),
             ],
@@ -1057,7 +1063,7 @@ class _MainDashboardState extends State<MainDashboard>
       children: [
         // Target Dir Selector at Top
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
           child: _buildDirSelectorCard(),
         ),
 
@@ -1094,7 +1100,7 @@ class _MainDashboardState extends State<MainDashboard>
             children: [
               // Tab 1: Filters Configuration
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: SingleChildScrollView(
                   child: MoveRulePanel(
                     initialRule: _moveRule,
@@ -1108,7 +1114,7 @@ class _MainDashboardState extends State<MainDashboard>
 
               // Tab 2: Preview Panel
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: MovePreviewPanel(
                   items: _moveItems,
                   isScanning: _isMovingScan,
@@ -1123,6 +1129,7 @@ class _MainDashboardState extends State<MainDashboard>
                   onSearch: _selectedDirPath.isNotEmpty
                       ? _scanDirectoryForMove
                       : null,
+                  onItemSelectionChanged: (_) => setState(() {}),
                 ),
               ),
             ],
@@ -1146,7 +1153,7 @@ class _MainDashboardState extends State<MainDashboard>
         side: BorderSide(color: context.borderColor),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1157,7 +1164,7 @@ class _MainDashboardState extends State<MainDashboard>
                   fontWeight: FontWeight.bold,
                   fontSize: 15),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
@@ -1183,7 +1190,6 @@ class _MainDashboardState extends State<MainDashboard>
                     ),
                   ),
                 ),
-
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: _selectDirectory,
@@ -1211,7 +1217,7 @@ class _MainDashboardState extends State<MainDashboard>
 
   Widget _buildSnifferDesktopView() {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(12.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1222,7 +1228,7 @@ class _MainDashboardState extends State<MainDashboard>
               child: Column(
                 children: [
                   _buildDirSelectorCard(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   SnifferRulePanel(
                     initialRule: _snifferRule,
                     onChanged: _onSnifferRulePanelChanged,
@@ -1245,6 +1251,7 @@ class _MainDashboardState extends State<MainDashboard>
               onSearch:
                   _selectedDirPath.isNotEmpty ? _scanDirectoryForSniffer : null,
               onSelectDirectory: _selectDirectory,
+              onItemSelectionChanged: (_) => setState(() {}),
             ),
           ),
         ],
@@ -1264,7 +1271,7 @@ class _MainDashboardState extends State<MainDashboard>
       children: [
         // Target Dir Selector at Top
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
           child: _buildDirSelectorCard(),
         ),
 
@@ -1301,7 +1308,7 @@ class _MainDashboardState extends State<MainDashboard>
             children: [
               // Tab 1: Rules Configuration
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: SingleChildScrollView(
                   child: SnifferRulePanel(
                     initialRule: _snifferRule,
@@ -1312,7 +1319,7 @@ class _MainDashboardState extends State<MainDashboard>
 
               // Tab 2: Preview Panel
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: SnifferPreviewPanel(
                   items: _snifferItems,
                   isScanning: _isSnifferScan,
@@ -1324,6 +1331,7 @@ class _MainDashboardState extends State<MainDashboard>
                       ? _scanDirectoryForSniffer
                       : null,
                   onSelectDirectory: _selectDirectory,
+                  onItemSelectionChanged: (_) => setState(() {}),
                 ),
               ),
             ],

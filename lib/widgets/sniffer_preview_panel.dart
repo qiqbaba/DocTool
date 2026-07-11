@@ -14,6 +14,7 @@ class SnifferPreviewPanel extends StatefulWidget {
   final VoidCallback? onSearch;
   final VoidCallback? onSelectDirectory;
   final SnifferRule rule;
+  final ValueChanged<String>? onItemSelectionChanged;
 
   const SnifferPreviewPanel({
     super.key,
@@ -25,6 +26,7 @@ class SnifferPreviewPanel extends StatefulWidget {
     required this.rule,
     this.onSearch,
     this.onSelectDirectory,
+    this.onItemSelectionChanged,
   });
 
   @override
@@ -47,12 +49,15 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
   // Collision map to detect name conflict
   final Map<String, int> _pathCollisionMap = {};
 
-  final GlobalKey<PopupMenuButtonState<String>> _exportMenuKey = GlobalKey<PopupMenuButtonState<String>>();
+  final GlobalKey<PopupMenuButtonState<String>> _moreMenuKey =
+      GlobalKey<PopupMenuButtonState<String>>();
 
   @override
   void didUpdateWidget(covariant SnifferPreviewPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _validateCollisions();
+    if (oldWidget.items != widget.items) {
+      _validateCollisions();
+    }
   }
 
   void _validateCollisions() {
@@ -171,7 +176,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
 
   // 导出为 TXT 文件
   Future<void> _exportToTxt() async {
-    final selectedItems = widget.items.where((item) => item.isSelected).toList();
+    final selectedItems =
+        widget.items.where((item) => item.isSelected).toList();
     if (selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('请先勾选需要导出的文件夹')),
@@ -182,7 +188,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
     try {
       final String? outputFile = await FilePicker.platform.saveFile(
         dialogTitle: '选择保存 TXT 文件的路径',
-        fileName: 'sniffer_results_${DateTime.now().millisecondsSinceEpoch}.txt',
+        fileName:
+            'sniffer_results_${DateTime.now().millisecondsSinceEpoch}.txt',
         type: FileType.custom,
         allowedExtensions: ['txt'],
       );
@@ -191,7 +198,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
 
       final buffer = StringBuffer();
       buffer.writeln('================ DocTool 文件嗅探结果导出 ================');
-      buffer.writeln('导出时间: ${DateTime.now().toLocal().toString().split('.').first}');
+      buffer.writeln(
+          '导出时间: ${DateTime.now().toLocal().toString().split('.').first}');
       buffer.writeln('共导出项目数: ${selectedItems.length} 个');
       buffer.writeln('--------------------------------------------------');
 
@@ -203,19 +211,30 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
         buffer.writeln('总大小: ${item.formattedTotalSize}');
         buffer.writeln('分类统计详情:');
 
-        final videoInfo = item.stats[FileCategory.video] ?? FileTypeInfo(category: FileCategory.video);
-        final imageInfo = item.stats[FileCategory.image] ?? FileTypeInfo(category: FileCategory.image);
-        final archiveInfo = item.stats[FileCategory.archive] ?? FileTypeInfo(category: FileCategory.archive);
-        final docInfo = item.stats[FileCategory.document] ?? FileTypeInfo(category: FileCategory.document);
-        final audioInfo = item.stats[FileCategory.audio] ?? FileTypeInfo(category: FileCategory.audio);
-        final otherInfo = item.stats[FileCategory.other] ?? FileTypeInfo(category: FileCategory.other);
+        final videoInfo = item.stats[FileCategory.video] ??
+            FileTypeInfo(category: FileCategory.video);
+        final imageInfo = item.stats[FileCategory.image] ??
+            FileTypeInfo(category: FileCategory.image);
+        final archiveInfo = item.stats[FileCategory.archive] ??
+            FileTypeInfo(category: FileCategory.archive);
+        final docInfo = item.stats[FileCategory.document] ??
+            FileTypeInfo(category: FileCategory.document);
+        final audioInfo = item.stats[FileCategory.audio] ??
+            FileTypeInfo(category: FileCategory.audio);
+        final otherInfo = item.stats[FileCategory.other] ??
+            FileTypeInfo(category: FileCategory.other);
 
-        buffer.writeln('  - 视频: ${videoInfo.count} 个 (${videoInfo.formattedSize})');
-        buffer.writeln('  - 图片: ${imageInfo.count} 张 (${imageInfo.formattedSize})');
-        buffer.writeln('  - 压缩包: ${archiveInfo.count} 个 (${archiveInfo.formattedSize})');
+        buffer.writeln(
+            '  - 视频: ${videoInfo.count} 个 (${videoInfo.formattedSize})');
+        buffer.writeln(
+            '  - 图片: ${imageInfo.count} 张 (${imageInfo.formattedSize})');
+        buffer.writeln(
+            '  - 压缩包: ${archiveInfo.count} 个 (${archiveInfo.formattedSize})');
         buffer.writeln('  - 文档: ${docInfo.count} 份 (${docInfo.formattedSize})');
-        buffer.writeln('  - 音频: ${audioInfo.count} 首 (${audioInfo.formattedSize})');
-        buffer.writeln('  - 其他: ${otherInfo.count} 个 (${otherInfo.formattedSize})');
+        buffer.writeln(
+            '  - 音频: ${audioInfo.count} 首 (${audioInfo.formattedSize})');
+        buffer.writeln(
+            '  - 其他: ${otherInfo.count} 个 (${otherInfo.formattedSize})');
         buffer.writeln('--------------------------------------------------');
       }
 
@@ -238,7 +257,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
 
   // 导出为 Excel 文件
   Future<void> _exportToExcel() async {
-    final selectedItems = widget.items.where((item) => item.isSelected).toList();
+    final selectedItems =
+        widget.items.where((item) => item.isSelected).toList();
     if (selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('请先勾选需要导出的文件夹')),
@@ -249,7 +269,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
     try {
       final String? outputFile = await FilePicker.platform.saveFile(
         dialogTitle: '选择保存 Excel 文件的路径',
-        fileName: 'sniffer_results_${DateTime.now().millisecondsSinceEpoch}.xlsx',
+        fileName:
+            'sniffer_results_${DateTime.now().millisecondsSinceEpoch}.xlsx',
         type: FileType.custom,
         allowedExtensions: ['xlsx'],
       );
@@ -285,12 +306,18 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
       // 写入数据
       for (int i = 0; i < selectedItems.length; i++) {
         final item = selectedItems[i];
-        final videoInfo = item.stats[FileCategory.video] ?? FileTypeInfo(category: FileCategory.video);
-        final imageInfo = item.stats[FileCategory.image] ?? FileTypeInfo(category: FileCategory.image);
-        final archiveInfo = item.stats[FileCategory.archive] ?? FileTypeInfo(category: FileCategory.archive);
-        final docInfo = item.stats[FileCategory.document] ?? FileTypeInfo(category: FileCategory.document);
-        final audioInfo = item.stats[FileCategory.audio] ?? FileTypeInfo(category: FileCategory.audio);
-        final otherInfo = item.stats[FileCategory.other] ?? FileTypeInfo(category: FileCategory.other);
+        final videoInfo = item.stats[FileCategory.video] ??
+            FileTypeInfo(category: FileCategory.video);
+        final imageInfo = item.stats[FileCategory.image] ??
+            FileTypeInfo(category: FileCategory.image);
+        final archiveInfo = item.stats[FileCategory.archive] ??
+            FileTypeInfo(category: FileCategory.archive);
+        final docInfo = item.stats[FileCategory.document] ??
+            FileTypeInfo(category: FileCategory.document);
+        final audioInfo = item.stats[FileCategory.audio] ??
+            FileTypeInfo(category: FileCategory.audio);
+        final otherInfo = item.stats[FileCategory.other] ??
+            FileTypeInfo(category: FileCategory.other);
 
         sheet.appendRow([
           IntCellValue(i + 1),
@@ -482,7 +509,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
 
     final selectedCount = widget.items.where((item) => item.isSelected).length;
 
-    final hasRestoreItems = widget.items.any((item) => item.isSelected && item.currentName != item.baseName);
+    final hasRestoreItems = widget.items
+        .any((item) => item.isSelected && item.currentName != item.baseName);
 
     return Card(
       color: context.cardBg,
@@ -491,7 +519,7 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
         side: BorderSide(color: context.borderColor),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -504,17 +532,9 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '子文件夹预览',
-                        style: TextStyle(
-                            color: context.textColorPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
                         '共 ${widget.items.length} 个子文件夹，已选择 $selectedCount 个，将更改 $changedCount 个',
                         style: TextStyle(
-                            color: context.textColorSecondary, fontSize: 12),
+                            color: context.textColorPrimary, fontSize: 14),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -545,77 +565,6 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                PopupMenuButton<String>(
-                  key: _exportMenuKey,
-                  enabled: widget.items.isNotEmpty && !_isExecuting,
-                  tooltip: '导出结果',
-                  onSelected: (value) {
-                    if (value == 'txt') {
-                      _exportToTxt();
-                    } else if (value == 'excel') {
-                      _exportToExcel();
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'txt',
-                      child: Row(
-                        children: [
-                          Icon(Icons.description, color: Colors.blue, size: 20),
-                          SizedBox(width: 8),
-                          Text('导出为 TXT'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'excel',
-                      child: Row(
-                        children: [
-                          Icon(Icons.table_chart, color: Colors.green, size: 20),
-                          SizedBox(width: 8),
-                          Text('导出为 Excel'),
-                        ],
-                      ),
-                    ),
-                  ],
-                  child: OutlinedButton.icon(
-                    onPressed: (widget.items.isEmpty || _isExecuting)
-                        ? null
-                        : () {
-                            _exportMenuKey.currentState?.showButtonMenu();
-                          },
-                    icon: const Icon(Icons.download, size: 16),
-                    label: const Text('导出'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.purpleAccent,
-                      side: const BorderSide(color: Colors.purpleAccent),
-                      disabledForegroundColor: context.isDarkMode
-                          ? Colors.grey[600]
-                          : Colors.grey[500],
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: (_isExecuting || widget.items.isEmpty || !hasRestoreItems)
-                      ? null
-                      : _startRestore,
-                  icon: const Icon(Icons.settings_backup_restore, size: 16),
-                  label: const Text('还原名称'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.redAccent,
-                    side: const BorderSide(color: Colors.redAccent),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
-                  ),
-                ),
-                const SizedBox(width: 8),
                 FilledButton.tonalIcon(
                   onPressed: (_isExecuting ||
                           widget.items.isEmpty ||
@@ -639,9 +588,83 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                         horizontal: 16, vertical: 12),
                   ),
                 ),
+                const SizedBox(width: 8),
+                PopupMenuButton<String>(
+                  key: _moreMenuKey,
+                  enabled: !_isExecuting,
+                  tooltip: '更多操作',
+                  onSelected: (value) {
+                    if (value == 'txt') {
+                      _exportToTxt();
+                    } else if (value == 'excel') {
+                      _exportToExcel();
+                    } else if (value == 'restore') {
+                      _startRestore();
+                    }
+                  },
+                  itemBuilder: (context) {
+                    final hasItems = widget.items.isNotEmpty;
+                    return [
+                      PopupMenuItem(
+                        value: 'txt',
+                        enabled: hasItems,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.description,
+                              color: hasItems ? Colors.blue : Colors.grey,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('导出为 TXT'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'excel',
+                        enabled: hasItems,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.table_chart,
+                              color: hasItems ? Colors.green : Colors.grey,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('导出为 Excel'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'restore',
+                        enabled: hasItems && hasRestoreItems,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.settings_backup_restore,
+                              color: (hasItems && hasRestoreItems)
+                                  ? Colors.redAccent
+                                  : Colors.grey,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('还原名称'),
+                          ],
+                        ),
+                      ),
+                    ];
+                  },
+                  icon: Icon(
+                    Icons.more_vert,
+                    size: 24,
+                    color: !_isExecuting
+                        ? context.textColorPrimary
+                        : context.textColorSecondary.withOpacity(0.5),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
             // Execution Progress Overlay
             if (_isExecuting) ...[
@@ -666,7 +689,7 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                             style: const TextStyle(color: Colors.purpleAccent)),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     LinearProgressIndicator(
                       value: _progress,
                       backgroundColor: context.isDarkMode
@@ -690,7 +713,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
             ],
             // Column Header with Checkbox + Sortable Headers (总是可见的)
             Container(
-              padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 8),
+              padding:
+                  const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 8),
               decoration: BoxDecoration(
                 color: context.inputBg,
                 borderRadius:
@@ -706,12 +730,11 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                       tristate: true,
                       activeColor: Colors.purpleAccent,
                       onChanged: (val) {
-                        setState(() {
-                          final selectAll = val == true;
-                          for (var item in widget.items) {
-                            item.isSelected = selectAll;
-                          }
-                        });
+                        final selectAll = val == true;
+                        for (var item in widget.items) {
+                          item.isSelected = selectAll;
+                          widget.onItemSelectionChanged?.call(item.currentPath);
+                        }
                         _validateCollisions();
                       },
                     ),
@@ -794,8 +817,9 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                   backgroundColor: context.isDarkMode
                                       ? const Color(0xFF2D2D34)
                                       : Colors.grey[300],
-                                  valueColor: const AlwaysStoppedAnimation<Color>(
-                                      Colors.purpleAccent),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                          Colors.purpleAccent),
                                   minHeight: 6,
                                 ),
                               ),
@@ -848,7 +872,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                               final error = _getItemValidationError(item);
                               final isExpanded =
                                   _expandedPaths.contains(item.currentPath);
-                              final hasChanges = item.newName != item.currentName;
+                              final hasChanges =
+                                  item.newName != item.currentName;
 
                               return Card(
                                 color: isDark
@@ -862,7 +887,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                     color: error != null
                                         ? Colors.redAccent
                                         : (hasChanges && item.isSelected
-                                            ? Colors.purpleAccent.withOpacity(0.5)
+                                            ? Colors.purpleAccent
+                                                .withOpacity(0.5)
                                             : context.borderColor),
                                     width: 1.5,
                                   ),
@@ -874,9 +900,11 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                       onTap: () {
                                         setState(() {
                                           if (isExpanded) {
-                                            _expandedPaths.remove(item.currentPath);
+                                            _expandedPaths
+                                                .remove(item.currentPath);
                                           } else {
-                                            _expandedPaths.add(item.currentPath);
+                                            _expandedPaths
+                                                .add(item.currentPath);
                                           }
                                         });
                                       },
@@ -891,11 +919,13 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                               height: 24,
                                               child: Checkbox(
                                                 value: item.isSelected,
-                                                activeColor: Colors.purpleAccent,
+                                                activeColor:
+                                                    Colors.purpleAccent,
                                                 onChanged: (val) {
-                                                  setState(() {
-                                                    item.isSelected = val ?? false;
-                                                  });
+                                                  item.isSelected =
+                                                      val ?? false;
+                                                  widget.onItemSelectionChanged
+                                                      ?.call(item.currentPath);
                                                   _validateCollisions();
                                                 },
                                               ),
@@ -913,27 +943,33 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                                     children: [
                                                       Icon(Icons.folder_open,
                                                           size: 16,
-                                                          color: Colors.amber[700]),
+                                                          color: Colors
+                                                              .amber[700]),
                                                       const SizedBox(width: 6),
                                                       Expanded(
                                                         child: Tooltip(
-                                                          message: item.currentName,
+                                                          message:
+                                                              item.currentName,
                                                           child: Text(
                                                             item.currentName,
                                                             style: TextStyle(
                                                               color: context
                                                                   .textColorPrimary,
-                                                              fontWeight: FontWeight.bold,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
                                                               fontSize: 13,
                                                               decoration: hasChanges &&
-                                                                      item.isSelected
+                                                                      item
+                                                                          .isSelected
                                                                   ? TextDecoration
                                                                       .lineThrough
                                                                   : null,
                                                             ),
                                                             maxLines: 1,
                                                             overflow:
-                                                                TextOverflow.ellipsis,
+                                                                TextOverflow
+                                                                    .ellipsis,
                                                           ),
                                                         ),
                                                       ),
@@ -945,25 +981,32 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                                     Row(
                                                       children: [
                                                         const Icon(
-                                                            Icons.arrow_right_alt,
+                                                            Icons
+                                                                .arrow_right_alt,
                                                             size: 14,
-                                                            color: Colors.purpleAccent),
-                                                        const SizedBox(width: 4),
+                                                            color: Colors
+                                                                .purpleAccent),
+                                                        const SizedBox(
+                                                            width: 4),
                                                         Expanded(
                                                           child: Tooltip(
-                                                            message: item.newName,
+                                                            message:
+                                                                item.newName,
                                                             child: Text(
                                                               item.newName,
-                                                              style: const TextStyle(
-                                                                color:
-                                                                    Colors.purpleAccent,
+                                                              style:
+                                                                  const TextStyle(
+                                                                color: Colors
+                                                                    .purpleAccent,
                                                                 fontWeight:
-                                                                    FontWeight.bold,
+                                                                    FontWeight
+                                                                        .bold,
                                                                 fontSize: 12,
                                                               ),
                                                               maxLines: 2,
                                                               overflow:
-                                                                  TextOverflow.ellipsis,
+                                                                  TextOverflow
+                                                                      .ellipsis,
                                                             ),
                                                           ),
                                                         ),
@@ -981,7 +1024,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                                 '${item.totalCount}',
                                                 textAlign: TextAlign.center,
                                                 style: TextStyle(
-                                                    color: context.textColorSecondary,
+                                                    color: context
+                                                        .textColorSecondary,
                                                     fontSize: 12),
                                               ),
                                             ),
@@ -992,7 +1036,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                               child: Text(
                                                 item.formattedTotalSize,
                                                 style: TextStyle(
-                                                    color: context.textColorSecondary,
+                                                    color: context
+                                                        .textColorSecondary,
                                                     fontSize: 12),
                                               ),
                                             ),
@@ -1001,73 +1046,101 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                             SizedBox(
                                               width: 90,
                                               child: Row(
-                                                mainAxisAlignment: MainAxisAlignment.end,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.end,
                                                 children: [
                                                   if (error != null)
                                                     Container(
-                                                      padding: const EdgeInsets.symmetric(
-                                                          horizontal: 6, vertical: 3),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 3),
                                                       decoration: BoxDecoration(
-                                                          color: Colors.redAccent
+                                                          color: Colors
+                                                              .redAccent
                                                               .withOpacity(0.2),
-                                                      borderRadius:
-                                                          BorderRadius.circular(6)),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(6)),
                                                       child: Text(error,
                                                           style: const TextStyle(
-                                                              color: Colors.redAccent,
+                                                              color: Colors
+                                                                  .redAccent,
                                                               fontSize: 9,
-                                                              fontWeight: FontWeight.bold)),
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold)),
                                                     )
                                                   else if (!item.isSelected)
                                                     Container(
-                                                      padding: const EdgeInsets.symmetric(
-                                                          horizontal: 6, vertical: 3),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 3),
                                                       decoration: BoxDecoration(
-                                                          color: context.borderColor,
+                                                          color: context
+                                                              .borderColor,
                                                           borderRadius:
-                                                              BorderRadius.circular(6)),
+                                                              BorderRadius
+                                                                  .circular(6)),
                                                       child: Text('已排除',
                                                           style: TextStyle(
-                                                              color:
-                                                                  context.textColorSecondary,
+                                                              color: context
+                                                                  .textColorSecondary,
                                                               fontSize: 9)),
                                                     )
                                                   else if (!hasChanges)
                                                     Container(
-                                                      padding: const EdgeInsets.symmetric(
-                                                          horizontal: 6, vertical: 3),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 3),
                                                       decoration: BoxDecoration(
-                                                          color: Colors.greenAccent
+                                                          color: Colors
+                                                              .greenAccent
                                                               .withOpacity(0.2),
                                                           borderRadius:
-                                                              BorderRadius.circular(6)),
+                                                              BorderRadius
+                                                                  .circular(6)),
                                                       child: const Text('已是最优',
                                                           style: TextStyle(
-                                                              color: Colors.green,
+                                                              color:
+                                                                  Colors.green,
                                                               fontSize: 9)),
                                                     )
                                                   else
                                                     Container(
-                                                      padding: const EdgeInsets.symmetric(
-                                                          horizontal: 6, vertical: 3),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 3),
                                                       decoration: BoxDecoration(
-                                                          color: Colors.purpleAccent
-                                                              .withOpacity(0.15),
+                                                          color: Colors
+                                                              .purpleAccent
+                                                              .withOpacity(
+                                                                  0.15),
                                                           borderRadius:
-                                                              BorderRadius.circular(6)),
+                                                              BorderRadius
+                                                                  .circular(6)),
                                                       child: const Text('待执行',
                                                           style: TextStyle(
-                                                              color: Colors.purpleAccent,
+                                                              color: Colors
+                                                                  .purpleAccent,
                                                               fontSize: 9,
-                                                              fontWeight: FontWeight.bold)),
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold)),
                                                     ),
                                                   const SizedBox(width: 4),
                                                   Icon(
                                                     isExpanded
-                                                        ? Icons.keyboard_arrow_up
-                                                        : Icons.keyboard_arrow_down,
+                                                        ? Icons
+                                                            .keyboard_arrow_up
+                                                        : Icons
+                                                            .keyboard_arrow_down,
                                                     size: 18,
-                                                    color: context.textColorSecondary,
+                                                    color: context
+                                                        .textColorSecondary,
                                                   ),
                                                 ],
                                               ),
@@ -1080,10 +1153,11 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                     // Visual Stacked Bar Chart
                                     if (item.totalCount > 0)
                                       Padding(
-                                        padding:
-                                            const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                                        padding: const EdgeInsets.fromLTRB(
+                                            16, 0, 16, 8),
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             _buildStackedProgressBar(item),
                                             const SizedBox(height: 4),
@@ -1093,8 +1167,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                       )
                                     else
                                       Padding(
-                                        padding:
-                                            const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                                        padding: const EdgeInsets.fromLTRB(
+                                            16, 0, 16, 8),
                                         child: Text(
                                           '此文件夹是空文件夹',
                                           style: TextStyle(
@@ -1107,7 +1181,9 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
 
                                     // Expanded Details (Dropdown panel)
                                     if (isExpanded) ...[
-                                      Divider(height: 1, color: context.borderColor),
+                                      Divider(
+                                          height: 1,
+                                          color: context.borderColor),
                                       Container(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 16, vertical: 12),
@@ -1120,18 +1196,20 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                                   (cat == FileCategory.other &&
                                                       widget.rule.enableOther))
                                               .map((cat) {
-                                            final activeStats =
-                                                item.getActiveStats(widget.rule);
+                                            final activeStats = item
+                                                .getActiveStats(widget.rule);
                                             final info = activeStats[cat]!;
                                             if (cat == FileCategory.other &&
                                                 widget.rule.hideZero &&
                                                 info.count == 0) {
                                               return const SizedBox();
                                             }
-                                            final color = _getCategoryColor(cat);
+                                            final color =
+                                                _getCategoryColor(cat);
                                             return Padding(
-                                              padding: const EdgeInsets.symmetric(
-                                                  vertical: 4.0),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 4.0),
                                               child: Row(
                                                 children: [
                                                   Icon(_getCategoryIcon(cat),
@@ -1139,16 +1217,17 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                                   const SizedBox(width: 8),
                                                   Text(cat,
                                                       style: TextStyle(
-                                                          color:
-                                                              context.textColorPrimary,
+                                                          color: context
+                                                              .textColorPrimary,
                                                           fontSize: 12,
-                                                          fontWeight: FontWeight.w600)),
+                                                          fontWeight:
+                                                              FontWeight.w600)),
                                                   const Spacer(),
                                                   Text(
                                                     '${info.count}${FileCategory.units[cat]} (${info.formattedSize})',
                                                     style: TextStyle(
-                                                        color:
-                                                            context.textColorSecondary,
+                                                        color: context
+                                                            .textColorSecondary,
                                                         fontSize: 12),
                                                   ),
                                                 ],

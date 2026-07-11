@@ -153,7 +153,7 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
         side: BorderSide(color: context.borderColor),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -172,11 +172,11 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
             // Section 1: Scan Options
             _buildSectionHeader('扫描范围配置'),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             SwitchListTile(
               title: Text('包含深层子文件夹的文件',
                   style:
@@ -195,14 +195,14 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
 
             // Section 2: Enabled Categories (Grid/Chips)
             _buildSectionHeader('统计文件类型 (支持选择性排除)'),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             // 全选/取消全选
             Row(
               children: [
                 _buildSelectAllButton(),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 8.0,
               runSpacing: 8.0,
@@ -256,6 +256,8 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
               value: _rule.enableOther,
               activeColor: Colors.purpleAccent,
               contentPadding: EdgeInsets.zero,
+              dense: true,
+              visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
               controlAffinity: ListTileControlAffinity.leading,
               onChanged: (val) {
                 _triggerChanged(_rule.copyWith(enableOther: val ?? true));
@@ -281,6 +283,8 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                     value: _rule.showSize,
                     activeColor: Colors.purpleAccent,
                     contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
                     controlAffinity: ListTileControlAffinity.leading,
                     onChanged: (val) {
                       _triggerChanged(_rule.copyWith(showSize: val ?? false));
@@ -298,6 +302,8 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                     value: _rule.showCount,
                     activeColor: Colors.purpleAccent,
                     contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
                     controlAffinity: ListTileControlAffinity.leading,
                     onChanged: (val) {
                       _triggerChanged(_rule.copyWith(showCount: val ?? false));
@@ -306,7 +312,7 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
 
             CheckboxListTile(
               title: Text('隐藏统计结果为 0 的类型',
@@ -315,6 +321,8 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
               value: _rule.hideZero,
               activeColor: Colors.purpleAccent,
               contentPadding: EdgeInsets.zero,
+              dense: true,
+              visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
               controlAffinity: ListTileControlAffinity.leading,
               onChanged: (val) {
                 _triggerChanged(_rule.copyWith(hideZero: val ?? false));
@@ -327,12 +335,14 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
               value: _rule.skipEmptyFolder,
               activeColor: Colors.purpleAccent,
               contentPadding: EdgeInsets.zero,
+              dense: true,
+              visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
               controlAffinity: ListTileControlAffinity.leading,
               onChanged: (val) {
                 _triggerChanged(_rule.copyWith(skipEmptyFolder: val ?? false));
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
             // Wrapper characters
             Text('包裹符号',
@@ -340,7 +350,7 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                     color: context.textColorSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Wrap(
               spacing: 8.0,
               runSpacing: 8.0,
@@ -399,7 +409,7 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
               }).toList(),
             ),
             if (_selectedWrapperType == 'custom') ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
@@ -424,7 +434,7 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                 ],
               ),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
             // Separator settings
             Text('连接分隔符',
@@ -432,7 +442,7 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                     color: context.textColorSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Wrap(
               spacing: 8.0,
               runSpacing: 8.0,
@@ -491,7 +501,7 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
               }).toList(),
             ),
             if (_selectedSeparatorType == 'custom') ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               TextField(
                 controller: _separatorCustomController,
                 style: TextStyle(color: context.textColorPrimary, fontSize: 13),

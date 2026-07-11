@@ -210,7 +210,7 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
             side: BorderSide(color: context.borderColor),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -218,7 +218,7 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                   '扫描与清理对象',
                   style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // Object Type selection
                 Row(
@@ -278,7 +278,7 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // Recursive Scan switch
                 Row(
@@ -304,7 +304,7 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
 
         // 2. Filters card
         Card(
@@ -314,7 +314,7 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
             side: BorderSide(color: context.borderColor),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -322,7 +322,7 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                   '高级筛选规则 (多条件取并集或交集配合)',
                   style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
 
                 // Format constraint (Only if files selected)
                 if (showFileOptions && !_rule.duplicateFilesOnly) ...[
@@ -334,7 +334,7 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                       hint: '例如: png, jpg, log, tmp (留空匹配所有)',
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                 ],
 
                 // File/Folder name contains
@@ -347,7 +347,7 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                       hint: '输入匹配的文件/文件夹名称关键字',
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   CheckboxListTile(
                     title: Text('区分大小写', style: TextStyle(color: context.textColorPrimary, fontSize: 14)),
                     value: _rule.caseSensitive,
@@ -362,13 +362,13 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                     controlAffinity: ListTileControlAffinity.leading,
                     dense: true,
                   ),
-                  Divider(color: context.borderColor, height: 24),
+                  Divider(color: context.borderColor, height: 16),
                 ],
 
                 // Size Filter Section
                 if (!_rule.duplicateFilesOnly) ...[
                   Text('大小筛选:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Expanded(
@@ -434,13 +434,13 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                       ],
                     ],
                   ),
-                  Divider(color: context.borderColor, height: 24),
+                  Divider(color: context.borderColor, height: 16),
                 ],
 
                 // Time Filter Section
                 if (!_rule.duplicateFilesOnly) ...[
                   Text('修改时间筛选:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   DropdownButtonFormField<TimeCondition>(
                     value: _rule.timeCondition,
                     dropdownColor: context.cardBg,
@@ -462,7 +462,7 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                       });
                     },
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   if (_rule.timeCondition == TimeCondition.beforeDate ||
                       _rule.timeCondition == TimeCondition.afterDate) ...[
                     OutlinedButton.icon(
@@ -481,7 +481,7 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                                         onPrimary: Colors.white,
                                         surface: Color(0xFF1E1E22),
                                         onSurface: Colors.white,
-                                      )
+                                        )
                                     : const ColorScheme.light(
                                         primary: Colors.redAccent,
                                         onPrimary: Colors.white,
@@ -521,13 +521,13 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                       decoration: _buildInputDecoration('输入天数'),
                     ),
                   ],
-                  Divider(color: context.borderColor, height: 24),
+                  Divider(color: context.borderColor, height: 16),
                 ],
 
                 // Hash (MD5) filter (Only for files)
                 if (showFileOptions && !_rule.duplicateFilesOnly) ...[
                   Text('MD5 哈希值特定匹配:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Expanded(
@@ -559,17 +559,17 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     '提示：匹配哈希值会在此期间自动读取并计算文件MD5，可能会减慢大型文件的扫描预览。',
                     style: TextStyle(color: context.textColorSecondary, fontSize: 11),
                   ),
-                  Divider(color: context.borderColor, height: 24),
+                  Divider(color: context.borderColor, height: 16),
                 ],
 
                 // Performance & Scan Settings
                 Text('扫描与性能设置:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 DropdownButtonFormField<int>(
                   value: _rule.maxThreads,
                   dropdownColor: context.cardBg,
@@ -595,16 +595,16 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                     });
                   },
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   '提示：程序默认会检测扫描目录所在的驱动器媒介类型。机械硬盘限制单线程以防磁头频繁寻道卡死，固态硬盘则会使用多线程跑满带宽。',
                   style: TextStyle(color: context.textColorSecondary, fontSize: 11),
                 ),
-                Divider(color: context.borderColor, height: 24),
+                Divider(color: context.borderColor, height: 16),
 
                 // Shortcut/Special Filters (Empty folder, Empty file, Duplicate Files)
                 Text('常用快捷筛选 / 一键清理项:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 
                 // Empty Files Option
                 if (showFileOptions && !_rule.duplicateFilesOnly)

@@ -11,6 +11,7 @@ class DeletePreviewPanel extends StatefulWidget {
   final VoidCallback onDeleteStarted;
   final VoidCallback onDeleteCompleted;
   final VoidCallback? onSearch;
+  final ValueChanged<String>? onItemSelectionChanged;
 
   const DeletePreviewPanel({
     super.key,
@@ -21,6 +22,7 @@ class DeletePreviewPanel extends StatefulWidget {
     required this.onDeleteStarted,
     required this.onDeleteCompleted,
     this.onSearch,
+    this.onItemSelectionChanged,
   });
 
   @override
@@ -107,11 +109,10 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
   }
 
   void _toggleSelectAll(bool? value) {
-    setState(() {
-      for (var item in widget.items) {
-        item.isSelected = value ?? false;
-      }
-    });
+    for (var item in widget.items) {
+      item.isSelected = value ?? false;
+      widget.onItemSelectionChanged?.call(item.path);
+    }
   }
 
   Future<void> _startDeleteProcess() async {
@@ -303,7 +304,7 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
         side: BorderSide(color: context.borderColor),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -316,17 +317,9 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '清理队列预览',
-                        style: TextStyle(
-                            color: context.textColorPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
                         '扫描到 ${widget.items.length} 个项目，已选择 $_selectedCount 个，预计释放空间: ${_formatSize(_selectedSizeSum)}',
                         style: TextStyle(
-                            color: context.textColorSecondary, fontSize: 12),
+                            color: context.textColorPrimary, fontSize: 14),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -382,7 +375,7 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
             // Progress Bar Overlay
             if (_isExecuting) ...[
@@ -407,7 +400,7 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                             style: const TextStyle(color: Colors.redAccent)),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     LinearProgressIndicator(
                       value: _progress,
                       backgroundColor: context.isDarkMode
@@ -416,7 +409,7 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                       valueColor:
                           const AlwaysStoppedAnimation<Color>(Colors.redAccent),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       '正在删除: $_currentExecutingItem',
                       maxLines: 1,
@@ -594,9 +587,9 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                                       value: item.isSelected,
                                       activeColor: Colors.redAccent,
                                       onChanged: (val) {
-                                        setState(() {
-                                          item.isSelected = val ?? false;
-                                        });
+                                        item.isSelected = val ?? false;
+                                        widget.onItemSelectionChanged
+                                            ?.call(item.path);
                                       },
                                     ),
                                     const SizedBox(width: 4),

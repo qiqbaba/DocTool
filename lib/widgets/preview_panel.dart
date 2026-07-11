@@ -8,6 +8,7 @@ class PreviewPanel extends StatefulWidget {
   final VoidCallback onRenameStarted;
   final VoidCallback onRenameCompleted;
   final VoidCallback? onSearch;
+  final ValueChanged<String>? onItemSelectionChanged;
 
   const PreviewPanel({
     super.key,
@@ -16,6 +17,7 @@ class PreviewPanel extends StatefulWidget {
     required this.onRenameStarted,
     required this.onRenameCompleted,
     this.onSearch,
+    this.onItemSelectionChanged,
   });
 
   @override
@@ -78,17 +80,18 @@ class _PreviewPanelState extends State<PreviewPanel> {
   @override
   void didUpdateWidget(covariant PreviewPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _validateItems();
+    if (oldWidget.items != widget.items) {
+      _validateItems();
+    }
   }
 
   void _toggleSelectAll(bool? value) {
     final changedItems =
         widget.items.where((item) => item.newName != item.baseName).toList();
-    setState(() {
-      for (var item in changedItems) {
-        item.isSelected = value ?? false;
-      }
-    });
+    for (var item in changedItems) {
+      item.isSelected = value ?? false;
+      widget.onItemSelectionChanged?.call(item.currentPath);
+    }
     _validateItems();
   }
 
@@ -234,7 +237,7 @@ class _PreviewPanelState extends State<PreviewPanel> {
         side: BorderSide(color: context.borderColor),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -247,17 +250,9 @@ class _PreviewPanelState extends State<PreviewPanel> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '对比预览',
-                        style: TextStyle(
-                            color: context.textColorPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
                         '共 ${changedItems.length} 个项目，已选择 $selectedCount 个，将重命名 $changedCount 个',
                         style: TextStyle(
-                            color: context.textColorSecondary, fontSize: 12),
+                            color: context.textColorPrimary, fontSize: 14),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -313,7 +308,7 @@ class _PreviewPanelState extends State<PreviewPanel> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
             // Execution Progress Overlay
             if (_isExecuting) ...[
@@ -338,7 +333,7 @@ class _PreviewPanelState extends State<PreviewPanel> {
                             style: const TextStyle(color: Colors.indigoAccent)),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     LinearProgressIndicator(
                       value: _progress,
                       backgroundColor: context.isDarkMode
@@ -347,7 +342,7 @@ class _PreviewPanelState extends State<PreviewPanel> {
                       valueColor: const AlwaysStoppedAnimation<Color>(
                           Colors.indigoAccent),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       '正在处理: $_currentExecutingItem',
                       maxLines: 1,
@@ -516,9 +511,9 @@ class _PreviewPanelState extends State<PreviewPanel> {
                                       value: item.isSelected,
                                       activeColor: Colors.indigoAccent,
                                       onChanged: (val) {
-                                        setState(() {
-                                          item.isSelected = val ?? false;
-                                        });
+                                        item.isSelected = val ?? false;
+                                        widget.onItemSelectionChanged
+                                            ?.call(item.currentPath);
                                         _validateItems();
                                       },
                                     ),

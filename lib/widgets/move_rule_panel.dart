@@ -267,7 +267,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
             side: BorderSide(color: context.borderColor),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -275,7 +275,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                   '移动目标目录与模式',
                   style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -311,7 +311,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                     ),
                   ],
                 ),
-                Divider(color: context.borderColor, height: 24),
+                Divider(color: context.borderColor, height: 16),
                 Opacity(
                   opacity: _rule.flattenToRoot ? 0.5 : 1.0,
                   child: Row(
@@ -363,7 +363,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
 
         // 1. Target & Range card
         Card(
@@ -373,7 +373,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
             side: BorderSide(color: context.borderColor),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -381,7 +381,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                   '扫描与过滤对象',
                   style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // Object Type selection
                 Opacity(
@@ -445,7 +445,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // Recursive Scan switch
                 Opacity(
@@ -476,7 +476,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
 
         // 2. Move Options Card
         Card(
@@ -486,7 +486,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
             side: BorderSide(color: context.borderColor),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -494,7 +494,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                   '同名冲突与目录结构设置',
                   style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 
                 // Conflict Strategy Dropdown
                 Row(
@@ -536,7 +536,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // Keep Structure option
                 Opacity(
@@ -578,7 +578,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
 
         // 3. Filters card
         Card(
@@ -588,7 +588,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
             side: BorderSide(color: context.borderColor),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -596,7 +596,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                   '文件与文件夹筛选条件',
                   style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
 
                 // Format constraint (Only if files selected)
                 if (showFileOptions && !_rule.duplicateFilesOnly) ...[
@@ -608,7 +608,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                       hint: '例如: png, jpg, log, tmp (留空匹配所有)',
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                 ],
 
                 // File/Folder name contains
@@ -621,7 +621,7 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                       hint: '输入匹配的文件/文件夹名称关键字',
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   CheckboxListTile(
                     title: Text('区分大小写', style: TextStyle(color: context.textColorPrimary, fontSize: 14)),
                     value: _rule.caseSensitive,
@@ -636,8 +636,8 @@ class _MoveRulePanelState extends State<MoveRulePanel> {
                     controlAffinity: ListTileControlAffinity.leading,
                     dense: true,
                   ),
-                  Divider(color: context.borderColor, height: 24),
-                  const SizedBox(height: 8),
+                  Divider(color: context.borderColor, height: 16),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Expanded(
