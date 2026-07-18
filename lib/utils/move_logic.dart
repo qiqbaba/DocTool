@@ -263,6 +263,31 @@ class MoveLogic {
         return items;
       }
 
+      // Pre-calculate directory sizes and stats via O(N) Bottom-Up aggregation to avoid O(N^2) directory re-scans
+      final Map<String, int> dirSizeMap = {};
+      final Map<String, FileStat> statMap = {};
+      final Map<String, int> fileSizeMap = {};
+
+      for (var entity in entities) {
+        try {
+          final stat = await entity.stat();
+          statMap[entity.path] = stat;
+          if (entity is File) {
+            final size = stat.size;
+            fileSizeMap[entity.path] = size;
+            String parent = p.dirname(entity.path);
+            while (parent.length >= rootPath.length) {
+              dirSizeMap[parent] = (dirSizeMap[parent] ?? 0) + size;
+              final nextParent = p.dirname(parent);
+              if (nextParent == parent) break;
+              parent = nextParent;
+            }
+          }
+        } catch (e) {
+          // Ignore inaccessible files
+        }
+      }
+
       List<MoveItem> candidateFiles = [];
       final List<MoveItem> pendingHashFilterItems = [];
 
@@ -301,7 +326,8 @@ class MoveLogic {
           bool matched = true;
           List<String> reasons = [];
 
-          final isEmpty = await isDirectoryEmpty(entity);
+          final isEmpty = (dirSizeMap[path] ?? 0) == 0 &&
+              await isDirectoryEmpty(entity);
           if (rule.emptyFoldersOnly) {
             if (!isEmpty) {
               matched = false;
@@ -322,9 +348,8 @@ class MoveLogic {
             }
           }
 
-          int dirSize = 0;
+          final int dirSize = dirSizeMap[path] ?? 0;
           if (matched && rule.sizeCondition != SizeCondition.any) {
-            dirSize = await getDirectorySize(entity);
             switch (rule.sizeCondition) {
               case SizeCondition.greaterThan:
                 if (dirSize <= rule.sizeValueBytes) matched = false;
@@ -341,14 +366,12 @@ class MoveLogic {
             if (matched) {
               reasons.add('文件夹大小匹配');
             }
-          } else {
-            dirSize = await getDirectorySize(entity);
           }
 
           DateTime modified = DateTime.now();
           if (matched) {
             try {
-              final stat = await entity.stat();
+              final stat = statMap[path] ?? await entity.stat();
               modified = stat.modified;
               if (rule.timeCondition != TimeCondition.any) {
                 if (rule.timeCondition == TimeCondition.beforeDate &&
@@ -391,8 +414,8 @@ class MoveLogic {
             continue;
           }
 
-          final fileSize = await entity.length();
-          final stat = await entity.stat();
+          final stat = statMap[path] ?? await entity.stat();
+          final fileSize = fileSizeMap[path] ?? stat.size;
           final modified = stat.modified;
 
           final bool shouldAutoDelete = rule.deleteSpecifiedSizeFiles &&

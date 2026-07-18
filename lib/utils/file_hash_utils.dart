@@ -106,6 +106,8 @@ class FileHashUtils {
     );
   }
 
+  static final Map<String, bool> _hddCache = {};
+
   /// Generic parallel hash computation engine.
   static Future<Map<String, String>> _calculateHashesParallel(
     List<File> files, {
@@ -126,6 +128,8 @@ class FileHashUtils {
     final cache = HashCacheManager();
     await cache.init();
     final List<File> needCompute = [];
+    final Map<String, int> fileSizes = {};
+    final Map<String, int> fileMtimes = {};
 
     // Check cache first
     for (var file in files) {
@@ -134,6 +138,9 @@ class FileHashUtils {
         final size = await file.length();
         final stat = await file.stat();
         final mtime = stat.modified.millisecondsSinceEpoch;
+        fileSizes[path] = size;
+        fileMtimes[path] = mtime;
+
         final cached = cacheGetter(cache, path, size, mtime);
         if (cached != null && cached.isNotEmpty) {
           results[path] = cached;
@@ -173,9 +180,9 @@ class FileHashUtils {
         final hash = await compute(hashFn, path);
         results[path] = hash;
 
-        final size = await file.length();
-        final stat = await file.stat();
-        final mtime = stat.modified.millisecondsSinceEpoch;
+        final size = fileSizes[path] ?? await file.length();
+        final mtime = fileMtimes[path] ??
+            (await file.stat()).modified.millisecondsSinceEpoch;
         cacheSetter(cache, path, size, mtime, hash);
       } catch (e) {
         debugPrint('Error in parallel hash calculation: $e');
@@ -203,24 +210,28 @@ class FileHashUtils {
   /// Detect if target path resides on a spinning Hard Disk Drive (HDD) on Windows.
   static Future<bool> isDriveHDD(String path) async {
     if (!Platform.isWindows) return false;
+    String driveLetter = 'C';
+    if (path.length >= 2 && path[1] == ':') {
+      driveLetter = path[0].toUpperCase();
+    }
+    if (_hddCache.containsKey(driveLetter)) {
+      return _hddCache[driveLetter]!;
+    }
     try {
-      String driveLetter = 'C';
-      if (path.length >= 2 && path[1] == ':') {
-        driveLetter = path[0].toUpperCase();
-      }
       final result = await Process.run('powershell', [
         '-Command',
         'Get-PhysicalDisk | Where-Object { \$_.DeviceID -eq (Get-Partition -DriveLetter $driveLetter | Get-Disk).Number } | Select-Object -ExpandProperty MediaType',
       ]);
       if (result.exitCode == 0) {
         final out = result.stdout.toString().trim().toUpperCase();
-        if (out.contains('HDD')) {
-          return true;
-        }
+        final isHDD = out.contains('HDD');
+        _hddCache[driveLetter] = isHDD;
+        return isHDD;
       }
     } catch (e) {
       debugPrint('Failed to detect disk type: $e');
     }
+    _hddCache[driveLetter] = false;
     return false;
   }
 

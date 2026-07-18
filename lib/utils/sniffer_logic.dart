@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
@@ -350,68 +351,49 @@ class SnifferLogic {
         return results;
       }
 
-      int processed = 0;
-      for (var subDir in subDirs) {
-        final dirPath = subDir.path;
-        final dirName = p.basename(dirPath);
-        final baseName = extractBaseName(dirName, rule: rule);
+      int completedCount = 0;
+      final int maxConcurrency = Platform.numberOfProcessors * 2;
+      final List<SnifferFolderItem?> folderResults =
+          List.filled(subDirs.length, null);
 
-        onProgress(
-          0.05 + 0.90 * (processed / subDirs.length),
-          '正在统计子文件夹: $dirName (${processed + 1}/${subDirs.length})',
-        );
+      int activeWorkers = 0;
+      int nextIndex = 0;
+      final completer = Completer<void>();
 
-        final Map<String, FileTypeInfo> stats = {
-          for (var cat in FileCategory.all) cat: FileTypeInfo(category: cat)
-        };
-
-        try {
-          final List<FileSystemEntity> allEntities = await subDir
-              .list(recursive: rule.recursive, followLinks: false)
-              .toList();
-
-          for (var entity in allEntities) {
-            if (entity is File) {
-              final filePath = entity.path;
-              final ext =
-                  p.extension(filePath).toLowerCase().replaceAll('.', '');
-              int size = 0;
-              try {
-                size = await entity.length();
-              } catch (e) {
-                debugPrint('Warning: Unable to get length of $filePath: $e');
-              }
-
-              String assignedCategory = FileCategory.other;
-              for (var entry in FileCategory.extensions.entries) {
-                if (entry.value.contains(ext)) {
-                  assignedCategory = entry.key;
-                  break;
-                }
-              }
-
-              stats[assignedCategory]!.count++;
-              stats[assignedCategory]!.sizeBytes += size;
-            }
+      void launchWorker() {
+        if (nextIndex >= subDirs.length) {
+          if (activeWorkers == 0 && !completer.isCompleted) {
+            completer.complete();
           }
-        } catch (e) {
-          debugPrint('Error listing subdirectory $dirPath: $e');
+          return;
         }
 
-        results.add(SnifferFolderItem(
-          directory: subDir,
-          currentPath: dirPath,
-          currentName: dirName,
-          baseName: baseName,
-          stats: stats,
-        ));
+        final index = nextIndex++;
+        activeWorkers++;
 
-        processed++;
+        _processSubDir(subDirs[index], rule).then((item) {
+          folderResults[index] = item;
+          completedCount++;
+          onProgress(
+            0.05 + 0.95 * (completedCount / subDirs.length),
+            '正在统计子文件夹: ${item.currentName} ($completedCount/${subDirs.length})',
+          );
+        }).whenComplete(() {
+          activeWorkers--;
+          launchWorker();
+        });
       }
 
-      for (var item in results) {
-        item.updateNewName(rule);
+      final initialWorkers = maxConcurrency < subDirs.length
+          ? maxConcurrency
+          : subDirs.length;
+      for (int i = 0; i < initialWorkers; i++) {
+        launchWorker();
       }
+
+      await completer.future;
+
+      results.addAll(folderResults.whereType<SnifferFolderItem>());
 
       onProgress(1.0, '扫描完成，共找到 ${results.length} 个文件夹');
     } catch (e) {
@@ -420,6 +402,61 @@ class SnifferLogic {
     }
 
     return results;
+  }
+
+  /// Helper to process a single subdirectory concurrently
+  static Future<SnifferFolderItem> _processSubDir(
+      Directory subDir, SnifferRule rule) async {
+    final dirPath = subDir.path;
+    final dirName = p.basename(dirPath);
+    final baseName = extractBaseName(dirName, rule: rule);
+
+    final Map<String, FileTypeInfo> stats = {
+      for (var cat in FileCategory.all) cat: FileTypeInfo(category: cat)
+    };
+
+    try {
+      final List<FileSystemEntity> allEntities = await subDir
+          .list(recursive: rule.recursive, followLinks: false)
+          .toList();
+
+      for (var entity in allEntities) {
+        if (entity is File) {
+          final filePath = entity.path;
+          final ext = p.extension(filePath).toLowerCase().replaceAll('.', '');
+          int size = 0;
+          try {
+            final stat = await entity.stat();
+            size = stat.size;
+          } catch (e) {
+            debugPrint('Warning: Unable to get stat of $filePath: $e');
+          }
+
+          String assignedCategory = FileCategory.other;
+          for (var entry in FileCategory.extensions.entries) {
+            if (entry.value.contains(ext)) {
+              assignedCategory = entry.key;
+              break;
+            }
+          }
+
+          stats[assignedCategory]!.count++;
+          stats[assignedCategory]!.sizeBytes += size;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error listing subdirectory $dirPath: $e');
+    }
+
+    final item = SnifferFolderItem(
+      directory: subDir,
+      currentPath: dirPath,
+      currentName: dirName,
+      baseName: baseName,
+      stats: stats,
+    );
+    item.updateNewName(rule);
+    return item;
   }
 
   /// 执行嗅探重命名

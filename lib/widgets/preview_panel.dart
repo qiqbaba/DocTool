@@ -148,18 +148,24 @@ class _PreviewPanelState extends State<PreviewPanel> {
 
     widget.onRenameStarted();
 
+    int lastUpdateMs = DateTime.now().millisecondsSinceEpoch;
     await FileHelper.executeRename(
       itemsToRename,
       onItemComplete: (index, progress, item) {
-        setState(() {
-          _progress = progress;
-          _currentExecutingItem = item.newName;
-          if (item.isSuccess) {
-            _successCount++;
-          } else {
-            _failCount++;
-          }
-        });
+        if (item.isSuccess) {
+          _successCount++;
+        } else {
+          _failCount++;
+        }
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final isLast = index == itemsToRename.length - 1;
+        if (isLast || now - lastUpdateMs >= 50) {
+          lastUpdateMs = now;
+          setState(() {
+            _progress = progress;
+            _currentExecutingItem = item.newName;
+          });
+        }
       },
       onAllComplete: () {
         setState(() {

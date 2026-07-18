@@ -109,18 +109,24 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
       _failCount = 0;
     });
 
+    int lastUpdateMs = DateTime.now().millisecondsSinceEpoch;
     await SnifferLogic.executeSnifferRename(
       list,
       onItemComplete: (index, progress, item) {
-        setState(() {
-          _progress = progress;
-          _currentExecutingItem = item.newName;
-          if (item.isSuccess) {
-            _successCount++;
-          } else {
-            _failCount++;
-          }
-        });
+        if (item.isSuccess) {
+          _successCount++;
+        } else {
+          _failCount++;
+        }
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final isLast = index == list.length - 1;
+        if (isLast || now - lastUpdateMs >= 50) {
+          lastUpdateMs = now;
+          setState(() {
+            _progress = progress;
+            _currentExecutingItem = item.newName;
+          });
+        }
       },
       onAllComplete: () {
         setState(() {
@@ -152,18 +158,24 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
       _failCount = 0;
     });
 
+    int lastRestoreUpdateMs = DateTime.now().millisecondsSinceEpoch;
     await SnifferLogic.executeRestoreNames(
       list,
       onItemComplete: (index, progress, item) {
-        setState(() {
-          _progress = progress;
-          _currentExecutingItem = item.baseName;
-          if (item.isSuccess) {
-            _successCount++;
-          } else {
-            _failCount++;
-          }
-        });
+        if (item.isSuccess) {
+          _successCount++;
+        } else {
+          _failCount++;
+        }
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final isLast = index == list.length - 1;
+        if (isLast || now - lastRestoreUpdateMs >= 50) {
+          lastRestoreUpdateMs = now;
+          setState(() {
+            _progress = progress;
+            _currentExecutingItem = item.baseName;
+          });
+        }
       },
       onAllComplete: () {
         setState(() {

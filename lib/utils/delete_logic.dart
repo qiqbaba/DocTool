@@ -240,6 +240,31 @@ class DeleteLogic {
         return items;
       }
 
+      // Pre-calculate directory sizes and stats via O(N) Bottom-Up aggregation to avoid O(N^2) directory re-scans
+      final Map<String, int> dirSizeMap = {};
+      final Map<String, FileStat> statMap = {};
+      final Map<String, int> fileSizeMap = {};
+
+      for (var entity in entities) {
+        try {
+          final stat = await entity.stat();
+          statMap[entity.path] = stat;
+          if (entity is File) {
+            final size = stat.size;
+            fileSizeMap[entity.path] = size;
+            String parent = p.dirname(entity.path);
+            while (parent.length >= rootPath.length) {
+              dirSizeMap[parent] = (dirSizeMap[parent] ?? 0) + size;
+              final nextParent = p.dirname(parent);
+              if (nextParent == parent) break;
+              parent = nextParent;
+            }
+          }
+        } catch (e) {
+          // Ignore inaccessible files
+        }
+      }
+
       // We will perform a first-pass matching for items (files/folders)
       // Special case: duplicate files matching is handled after scanning all files
       List<DeleteItem> candidateFiles = [];
@@ -276,7 +301,8 @@ class DeleteLogic {
           List<String> reasons = [];
 
           // 1. Empty folders only
-          final isEmpty = await isDirectoryEmpty(entity);
+          final isEmpty = (dirSizeMap[path] ?? 0) == 0 &&
+              await isDirectoryEmpty(entity);
           if (rule.emptyFoldersOnly) {
             if (!isEmpty) {
               matched = false;
@@ -299,9 +325,8 @@ class DeleteLogic {
           }
 
           // 3. Size condition
-          int dirSize = 0;
+          final int dirSize = dirSizeMap[path] ?? 0;
           if (matched && rule.sizeCondition != SizeCondition.any) {
-            dirSize = await getDirectorySize(entity);
             switch (rule.sizeCondition) {
               case SizeCondition.greaterThan:
                 if (dirSize <= rule.sizeValueBytes) matched = false;
@@ -318,16 +343,13 @@ class DeleteLogic {
             if (matched) {
               reasons.add('文件夹大小匹配');
             }
-          } else {
-            // Even if condition is any, we might compute size for UI presentation
-            dirSize = await getDirectorySize(entity);
           }
 
           // 4. Time filter (Modified Time)
           DateTime modified = DateTime.now();
           if (matched) {
             try {
-              final stat = await entity.stat();
+              final stat = statMap[path] ?? await entity.stat();
               modified = stat.modified;
               if (rule.timeCondition != TimeCondition.any) {
                 if (rule.timeCondition == TimeCondition.beforeDate &&
@@ -375,8 +397,8 @@ class DeleteLogic {
           bool matched = true;
           List<String> reasons = [];
 
-          final fileSize = await entity.length();
-          final stat = await entity.stat();
+          final stat = statMap[path] ?? await entity.stat();
+          final fileSize = fileSizeMap[path] ?? stat.size;
           final modified = stat.modified;
 
           // 1. Empty files only

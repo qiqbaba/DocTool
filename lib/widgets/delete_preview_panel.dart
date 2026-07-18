@@ -219,21 +219,26 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
 
     widget.onDeleteStarted();
 
+    int lastUpdateMs = DateTime.now().millisecondsSinceEpoch;
     await DeleteLogic.executeDelete(
       widget.items,
       onItemComplete: (index, progress, item) {
-        setState(() {
-          _progress = progress;
-          _currentExecutingItem = item.name;
-          if (item.isDeleted) {
-            _successCount++;
-          } else {
-            // Note: If duplicate or skipped (unselected), it shouldn't count as failure
-            if (item.isSelected) {
-              _failCount++;
-            }
+        if (item.isDeleted) {
+          _successCount++;
+        } else {
+          if (item.isSelected) {
+            _failCount++;
           }
-        });
+        }
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final isLast = index == widget.items.length - 1;
+        if (isLast || now - lastUpdateMs >= 50) {
+          lastUpdateMs = now;
+          setState(() {
+            _progress = progress;
+            _currentExecutingItem = item.name;
+          });
+        }
       },
       onAllComplete: () {
         setState(() {

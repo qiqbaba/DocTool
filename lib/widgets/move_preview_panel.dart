@@ -255,6 +255,7 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
 
     widget.onMoveStarted();
 
+    int lastUpdateMs = DateTime.now().millisecondsSinceEpoch;
     await MoveLogic.executeMove(
       widget.items,
       rootPath: widget.sourceDirPath,
@@ -262,17 +263,22 @@ class _MovePreviewPanelState extends State<MovePreviewPanel> {
       rule: widget.rule,
       strategy: widget.conflictStrategy,
       onItemComplete: (index, progress, item) {
-        setState(() {
-          _progress = progress;
-          _currentExecutingItem = item.name;
-          if (item.isMoved) {
-            _successCount++;
-          } else {
-            if (item.isSelected) {
-              _failCount++;
-            }
+        if (item.isMoved) {
+          _successCount++;
+        } else {
+          if (item.isSelected) {
+            _failCount++;
           }
-        });
+        }
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final isLast = index == widget.items.length - 1;
+        if (isLast || now - lastUpdateMs >= 50) {
+          lastUpdateMs = now;
+          setState(() {
+            _progress = progress;
+            _currentExecutingItem = item.name;
+          });
+        }
       },
       onAllComplete: () {
         setState(() {
