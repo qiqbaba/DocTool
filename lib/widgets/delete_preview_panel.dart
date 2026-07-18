@@ -120,95 +120,73 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
         widget.items.where((item) => item.isSelected).toList();
     if (selectedItems.isEmpty) return;
 
-    // Safety Dialogue with Checkbox Confirmation
-    bool? confirmed = await showDialog<bool>(
+    // Confirmation dialog with three action buttons
+    final choice = await showDialog<String>(
       context: context,
       builder: (context) {
-        bool understood = false;
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: context.cardBg,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              title: Row(
-                children: [
-                  const Icon(Icons.warning_amber_rounded,
-                      color: Colors.redAccent, size: 28),
-                  const SizedBox(width: 8),
-                  Text('确认批量删除？',
-                      style: TextStyle(
-                          color: context.textColorPrimary,
-                          fontWeight: FontWeight.bold)),
-                ],
+        return AlertDialog(
+          backgroundColor: context.cardBg,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  color: Colors.redAccent, size: 28),
+              const SizedBox(width: 8),
+              Text('确认批量删除？',
+                  style: TextStyle(
+                      color: context.textColorPrimary,
+                      fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '您即将删除 ${selectedItems.length} 个文件或文件夹。\n预计释放空间: ${_formatSize(_selectedSizeSum)}。',
+                style: TextStyle(color: context.textColorPrimary, fontSize: 14),
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '您即将删除 ${selectedItems.length} 个文件或文件夹。\n预计释放空间: ${_formatSize(_selectedSizeSum)}。',
-                    style: TextStyle(
-                        color: context.textColorPrimary, fontSize: 14),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '警告：本次删除将直接从磁盘中永久删除（硬删除），不经过系统回收站，数据一经删除将无法找回！',
-                    style: TextStyle(
-                        color: Colors.redAccent,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 16),
-                  CheckboxListTile(
-                    title: Text(
-                      '我已理解该操作的严重性，并确认删除上述选定文件。',
-                      style: TextStyle(
-                          color: context.textColorSecondary, fontSize: 12),
-                    ),
-                    value: understood,
-                    activeColor: Colors.redAccent,
-                    onChanged: (val) {
-                      setDialogState(() {
-                        understood = val ?? false;
-                      });
-                    },
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    dense: true,
-                  ),
-                ],
+              const SizedBox(height: 12),
+              Text(
+                '请选择删除方式：',
+                style: TextStyle(
+                    color: context.textColorSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text('取消',
-                      style: TextStyle(color: context.textColorSecondary)),
-                ),
-                FilledButton.tonalIcon(
-                  onPressed:
-                      understood ? () => Navigator.pop(context, true) : null,
-                  icon: const Icon(Icons.delete_forever, size: 18),
-                  label: const Text('确认永久删除'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: context.isDarkMode
-                        ? Colors.grey[800]
-                        : Colors.grey[300],
-                    disabledForegroundColor: context.isDarkMode
-                        ? Colors.grey[600]
-                        : Colors.grey[500],
-                  ),
-                ),
-              ],
-            );
-          },
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'cancel'),
+              child: Text('取消',
+                  style: TextStyle(color: context.textColorSecondary)),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: () => Navigator.pop(context, 'trash'),
+              icon: const Icon(Icons.delete_sweep, size: 18),
+              label: const Text('移动到回收站'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.orangeAccent,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: () => Navigator.pop(context, 'permanent'),
+              icon: const Icon(Icons.delete_forever, size: 18),
+              label: const Text('彻底删除'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
         );
       },
     );
 
-    if (confirmed != true) return;
+    if (choice == null || choice == 'cancel') return;
 
     setState(() {
       _isExecuting = true;
@@ -220,59 +198,153 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
     widget.onDeleteStarted();
 
     int lastUpdateMs = DateTime.now().millisecondsSinceEpoch;
-    await DeleteLogic.executeDelete(
-      widget.items,
-      onItemComplete: (index, progress, item) {
-        if (item.isDeleted) {
-          _successCount++;
-        } else {
-          if (item.isSelected) {
-            _failCount++;
-          }
-        }
-        final now = DateTime.now().millisecondsSinceEpoch;
-        final isLast = index == widget.items.length - 1;
-        if (isLast || now - lastUpdateMs >= 50) {
-          lastUpdateMs = now;
-          setState(() {
-            _progress = progress;
-            _currentExecutingItem = item.name;
-          });
-        }
-      },
-      onAllComplete: () {
-        setState(() {
-          _isExecuting = false;
-        });
 
-        // Show outcome dialog
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: context.cardBg,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Text('清理完毕',
-                style: TextStyle(
-                    color: context.textColorPrimary,
-                    fontWeight: FontWeight.bold)),
-            content: Text(
-              '删除成功: $_successCount 个项目\n删除失败: $_failCount 个项目\n共释放空间: ${_formatSize(_selectedSizeSum)}',
-              style: TextStyle(color: context.textColorSecondary, fontSize: 16),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  widget.onDeleteCompleted();
-                },
-                style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-                child: const Text('确定'),
+    if (choice == 'permanent') {
+      await DeleteLogic.executeDelete(
+        widget.items,
+        onItemComplete: (index, progress, item) {
+          if (item.isDeleted) {
+            _successCount++;
+          } else {
+            if (item.isSelected) {
+              _failCount++;
+            }
+          }
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final isLast = index == widget.items.length - 1;
+          if (isLast || now - lastUpdateMs >= 50) {
+            lastUpdateMs = now;
+            setState(() {
+              _progress = progress;
+              _currentExecutingItem = item.name;
+            });
+          }
+        },
+        onAllComplete: () {
+          setState(() {
+            _isExecuting = false;
+          });
+          _showResultDialog('彻底删除');
+        },
+      );
+    } else {
+      await DeleteLogic.executeMoveToTrash(
+        widget.items,
+        onItemComplete: (index, progress, item) {
+          if (item.isDeleted) {
+            _successCount++;
+          } else {
+            if (item.isSelected) {
+              _failCount++;
+            }
+          }
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final isLast = index == widget.items.length - 1;
+          if (isLast || now - lastUpdateMs >= 50) {
+            lastUpdateMs = now;
+            setState(() {
+              _progress = progress;
+              _currentExecutingItem = item.name;
+            });
+          }
+        },
+        onAllComplete: () {
+          setState(() {
+            _isExecuting = false;
+          });
+          _showResultDialog('移动到回收站');
+        },
+      );
+    }
+  }
+
+  void _showResultDialog(String actionName) {
+    final failedItems = widget.items
+        .where((item) => item.isSelected && !item.isDeleted)
+        .toList();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.cardBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('操作完毕',
+            style: TextStyle(
+                color: context.textColorPrimary, fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: 480,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$actionName成功: $_successCount 个项目\n失败: $_failCount 个项目\n共处理空间: ${_formatSize(_selectedSizeSum)}',
+                style:
+                    TextStyle(color: context.textColorSecondary, fontSize: 15),
               ),
+              if (failedItems.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  '失败项目及原因明细:',
+                  style: TextStyle(
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 180),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: failedItems.map((item) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.name,
+                                style: TextStyle(
+                                    color: context.textColorPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                item.error ?? '未知错误',
+                                style: const TextStyle(
+                                    color: Colors.orangeAccent, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
-        );
-      },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              widget.onDeleteCompleted();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
     );
   }
 

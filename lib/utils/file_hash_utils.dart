@@ -4,20 +4,46 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'hash_cache_manager.dart';
 
+/// Internal sink to collect the digest result from chunked MD5 calculation.
+class _DigestSink implements Sink<Digest> {
+  Digest? value;
+
+  @override
+  void add(Digest data) {
+    value = data;
+  }
+
+  @override
+  void close() {}
+}
+
 /// Shared utility for file hash computation and related disk operations.
 /// Replaces duplicated code in delete_logic.dart and move_logic.dart.
 class FileHashUtils {
-  /// Calculate full MD5 of a file via streaming.
+  /// Calculate full MD5 of a file with guaranteed handle release.
   /// This is a top-level function (not a closure) so it can be sent to an isolate via [compute].
   static Future<String> computeFileMd5(String path) async {
+    RandomAccessFile? raf;
     try {
       final file = File(path);
       if (!file.existsSync()) return '';
-      final stream = file.openRead();
-      final hash = await md5.bind(stream).first;
-      return hash.toString();
+      raf = await file.open(mode: FileMode.read);
+      final output = _DigestSink();
+      final input = md5.startChunkedConversion(output);
+      const bufferSize = 64 * 1024;
+      while (true) {
+        final bytes = await raf.read(bufferSize);
+        if (bytes.isEmpty) break;
+        input.add(bytes);
+      }
+      input.close();
+      return output.value?.toString() ?? '';
     } catch (e) {
       return '';
+    } finally {
+      try {
+        await raf?.close();
+      } catch (_) {}
     }
   }
 

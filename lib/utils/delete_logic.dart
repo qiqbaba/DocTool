@@ -1,7 +1,11 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:ffi';
+import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:win32/win32.dart';
 import 'hash_cache_manager.dart';
 import 'file_hash_utils.dart';
 
@@ -301,8 +305,8 @@ class DeleteLogic {
           List<String> reasons = [];
 
           // 1. Empty folders only
-          final isEmpty = (dirSizeMap[path] ?? 0) == 0 &&
-              await isDirectoryEmpty(entity);
+          final isEmpty =
+              (dirSizeMap[path] ?? 0) == 0 && await isDirectoryEmpty(entity);
           if (rule.emptyFoldersOnly) {
             if (!isEmpty) {
               matched = false;
@@ -731,5 +735,203 @@ class DeleteLogic {
     }
 
     onAllComplete();
+  }
+
+  /// Move selected items to the system recycle bin (soft delete).
+  /// - Windows: Uses SHFileOperation API for native recycle bin support.
+  /// - Android: Moves files to a .DocTool_Trash folder in app's documents directory.
+  static Future<void> executeMoveToTrash(
+    List<DeleteItem> items, {
+    required void Function(int index, double progress, DeleteItem item)
+        onItemComplete,
+    required void Function() onAllComplete,
+  }) async {
+    if (items.isEmpty) {
+      onAllComplete();
+      return;
+    }
+
+    if (Platform.isWindows) {
+      await _moveToTrashWindows(items, onItemComplete, onAllComplete);
+    } else if (Platform.isAndroid) {
+      await _moveToTrashAndroid(items, onItemComplete, onAllComplete);
+    } else {
+      // Unsupported platform
+      for (int i = 0; i < items.length; i++) {
+        final item = items[i];
+        if (item.isSelected) {
+          item.isDeleted = false;
+          item.error = '当前平台不支持移动到回收站';
+        }
+        onItemComplete(i, (i + 1) / items.length, item);
+      }
+      onAllComplete();
+    }
+  }
+
+  /// Move items to Windows system recycle bin using SHFileOperation with PowerShell fallback.
+  static Future<void> _moveToTrashWindows(
+    List<DeleteItem> items,
+    void Function(int index, double progress, DeleteItem item) onItemComplete,
+    void Function() onAllComplete,
+  ) async {
+    for (int i = 0; i < items.length; i++) {
+      final item = items[i];
+      if (!item.isSelected) {
+        onItemComplete(i, (i + 1) / items.length, item);
+        continue;
+      }
+
+      try {
+        if (await item.entity.exists()) {
+          await _moveToRecycleBinWindows(item.path, isDir: item.isDirectory);
+          item.isDeleted = true;
+        } else {
+          item.isDeleted = false;
+          item.error = '文件不存在或已被清除';
+        }
+      } catch (e) {
+        item.isDeleted = false;
+        item.error = e.toString().replaceAll('Exception: ', '');
+      }
+
+      onItemComplete(i, (i + 1) / items.length, item);
+    }
+
+    onAllComplete();
+  }
+
+  /// Move items to a custom trash folder on Android.
+  static Future<void> _moveToTrashAndroid(
+    List<DeleteItem> items,
+    void Function(int index, double progress, DeleteItem item) onItemComplete,
+    void Function() onAllComplete,
+  ) async {
+    // Create trash folder in app's documents directory
+    final trashDir = await getApplicationDocumentsDirectory();
+    final trashPath = p.join(trashDir.path, '.DocTool_Trash');
+    final trashDirectory = Directory(trashPath);
+    if (!await trashDirectory.exists()) {
+      await trashDirectory.create(recursive: true);
+    }
+
+    for (int i = 0; i < items.length; i++) {
+      final item = items[i];
+      if (!item.isSelected) {
+        onItemComplete(i, (i + 1) / items.length, item);
+        continue;
+      }
+
+      try {
+        if (await item.entity.exists()) {
+          // Create a unique subfolder in trash to avoid name collisions
+          final trashSubDir = Directory(p.join(trashPath, item.name));
+          if (await trashSubDir.exists()) {
+            // Append timestamp if name collision
+            final ts = DateTime.now().millisecondsSinceEpoch;
+            await item.entity.rename(p.join(trashPath, '${ts}_${item.name}'));
+          } else {
+            await item.entity.rename(p.join(trashPath, item.name));
+          }
+          item.isDeleted = true;
+        } else {
+          item.isDeleted = false;
+          item.error = '文件不存在';
+        }
+      } catch (e) {
+        item.isDeleted = false;
+        item.error = e.toString();
+      }
+
+      onItemComplete(i, (i + 1) / items.length, item);
+    }
+
+    onAllComplete();
+  }
+
+  /// Move a single file or directory to the Windows recycle bin using SHFileOperation with PowerShell fallback.
+  static Future<void> _moveToRecycleBinWindows(String path,
+      {bool isDir = false}) async {
+    final absolutePath = File(path).absolute.path;
+    final normalizedPath = p.normalize(absolutePath).replaceAll('/', '\\');
+
+    // Clear read-only attribute if file has read-only protection
+    try {
+      if (!isDir) {
+        final file = File(normalizedPath);
+        if (await file.exists()) {
+          await Process.run('attrib', ['-r', normalizedPath]);
+        }
+      }
+    } catch (_) {}
+
+    // 1. First attempt: Native Win32 SHFileOperation
+    bool nativeSuccess = false;
+    String? nativeError;
+
+    try {
+      final pathPointer = '$normalizedPath\x00'.toNativeUtf16();
+      final opPtr = calloc<SHFILEOPSTRUCT>();
+      try {
+        final op = opPtr.ref;
+        op.hwnd = 0;
+        op.wFunc = FO_DELETE;
+        op.pFrom = pathPointer;
+        op.pTo = Pointer.fromAddress(0);
+        op.fFlags = FILEOPERATION_FLAGS.FOF_ALLOWUNDO |
+            FILEOPERATION_FLAGS.FOF_NOCONFIRMATION |
+            FILEOPERATION_FLAGS.FOF_SILENT |
+            FILEOPERATION_FLAGS.FOF_NOERRORUI;
+        op.fAnyOperationsAborted = 0;
+        op.hNameMappings = Pointer.fromAddress(0);
+        op.lpszProgressTitle = Pointer<Utf16>.fromAddress(0);
+
+        int result = SHFileOperation(opPtr);
+
+        // Retry once after a brief pause if transient lock occurs
+        if (result != 0) {
+          await Future.delayed(const Duration(milliseconds: 150));
+          result = SHFileOperation(opPtr);
+        }
+
+        if (result == 0) {
+          nativeSuccess = true;
+        } else {
+          nativeError =
+              'SHFileOperation 错误码: 0x${result.toRadixString(16)} ($result)';
+        }
+      } finally {
+        calloc.free(pathPointer);
+        calloc.free(opPtr);
+      }
+    } catch (e) {
+      nativeError = e.toString();
+    }
+
+    if (nativeSuccess) return;
+
+    // 2. Fallback to PowerShell Microsoft.VisualBasic.FileIO.FileSystem
+    try {
+      await _moveToRecycleBinPowerShell(normalizedPath, isDir);
+      return;
+    } catch (fallbackError) {
+      throw Exception('$nativeError; PowerShell 失败: $fallbackError');
+    }
+  }
+
+  /// PowerShell fallback for moving file or directory to Windows recycle bin.
+  static Future<void> _moveToRecycleBinPowerShell(
+      String path, bool isDir) async {
+    final escapedPath = path.replaceAll("'", "''");
+    final psScript = isDir
+        ? "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory('$escapedPath', 'OnlyErrorDialogs', 'SendToRecycleBin')"
+        : "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('$escapedPath', 'OnlyErrorDialogs', 'SendToRecycleBin')";
+
+    final result = await Process.run(
+        'powershell', ['-NoProfile', '-NonInteractive', '-Command', psScript]);
+    if (result.exitCode != 0) {
+      final err = result.stderr.toString().trim();
+      throw Exception(err.isNotEmpty ? err : '退出码 ${result.exitCode}');
+    }
   }
 }
