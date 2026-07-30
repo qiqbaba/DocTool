@@ -84,7 +84,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'DocTool - 重复操作解决助手',
+      title: 'DocTool',
       debugShowCheckedModeBanner: false,
       themeMode: _themeMode,
       theme: ThemeData(
@@ -269,49 +269,37 @@ class _MainDashboardState extends State<MainDashboard>
             style: TextStyle(
                 color: context.textColorPrimary, fontWeight: FontWeight.bold),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<ThemeMode>(
-                title: Text('亮色模式',
-                    style: TextStyle(color: context.textColorPrimary)),
-                value: ThemeMode.light,
-                groupValue: widget.currentThemeMode,
-                activeColor: Colors.indigoAccent,
-                onChanged: (ThemeMode? value) {
-                  if (value != null) {
-                    widget.onThemeModeChanged(value);
-                    Navigator.pop(context);
-                  }
-                },
-              ),
-              RadioListTile<ThemeMode>(
-                title: Text('暗色模式',
-                    style: TextStyle(color: context.textColorPrimary)),
-                value: ThemeMode.dark,
-                groupValue: widget.currentThemeMode,
-                activeColor: Colors.indigoAccent,
-                onChanged: (ThemeMode? value) {
-                  if (value != null) {
-                    widget.onThemeModeChanged(value);
-                    Navigator.pop(context);
-                  }
-                },
-              ),
-              RadioListTile<ThemeMode>(
-                title: Text('跟随系统',
-                    style: TextStyle(color: context.textColorPrimary)),
-                value: ThemeMode.system,
-                groupValue: widget.currentThemeMode,
-                activeColor: Colors.indigoAccent,
-                onChanged: (ThemeMode? value) {
-                  if (value != null) {
-                    widget.onThemeModeChanged(value);
-                    Navigator.pop(context);
-                  }
-                },
-              ),
-            ],
+          content: RadioGroup<ThemeMode>(
+            groupValue: widget.currentThemeMode,
+            onChanged: (ThemeMode? value) {
+              if (value != null) {
+                widget.onThemeModeChanged(value);
+                Navigator.pop(context);
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<ThemeMode>(
+                  title: Text('亮色模式',
+                      style: TextStyle(color: context.textColorPrimary)),
+                  value: ThemeMode.light,
+                  activeColor: Colors.indigoAccent,
+                ),
+                RadioListTile<ThemeMode>(
+                  title: Text('暗色模式',
+                      style: TextStyle(color: context.textColorPrimary)),
+                  value: ThemeMode.dark,
+                  activeColor: Colors.indigoAccent,
+                ),
+                RadioListTile<ThemeMode>(
+                  title: Text('跟随系统',
+                      style: TextStyle(color: context.textColorPrimary)),
+                  value: ThemeMode.system,
+                  activeColor: Colors.indigoAccent,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(

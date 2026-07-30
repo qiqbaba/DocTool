@@ -296,7 +296,7 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                   constraints: const BoxConstraints(maxHeight: 180),
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: SingleChildScrollView(
@@ -459,9 +459,9 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.15),
+                  color: Colors.red.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -551,7 +551,7 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                           border: Border.all(color: context.borderColor),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
+                              color: Colors.black.withValues(alpha: 0.15),
                               blurRadius: 15,
                               offset: const Offset(0, 8),
                             ),
@@ -617,8 +617,8 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                               Icon(
                                 Icons.folder_open,
                                 size: 48,
-                                color:
-                                    context.textColorSecondary.withOpacity(0.5),
+                                color: context.textColorSecondary
+                                    .withValues(alpha: 0.5),
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -739,12 +739,12 @@ class _DeletePreviewPanelState extends State<DeletePreviewPanel> {
                                               horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
                                             color: Colors.redAccent
-                                                .withOpacity(0.12),
+                                                .withValues(alpha: 0.12),
                                             borderRadius:
                                                 BorderRadius.circular(4),
                                             border: Border.all(
                                                 color: Colors.redAccent
-                                                    .withOpacity(0.2)),
+                                                    .withValues(alpha: 0.2)),
                                           ),
                                           child: Text(
                                             item.matchReason,

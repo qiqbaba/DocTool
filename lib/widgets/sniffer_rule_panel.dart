@@ -185,7 +185,7 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                   style: TextStyle(
                       color: context.textColorSecondary, fontSize: 12)),
               value: _rule.recursive,
-              activeColor: Colors.purpleAccent,
+              activeThumbColor: Colors.purpleAccent,
               contentPadding: EdgeInsets.zero,
               onChanged: (val) {
                 _triggerChanged(_rule.copyWith(recursive: val));
@@ -221,7 +221,7 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                   label: Text(cat),
                   selected: isEnabled,
                   checkmarkColor: Colors.white,
-                  selectedColor: color.withOpacity(0.85),
+                  selectedColor: color.withValues(alpha: 0.85),
                   backgroundColor: context.inputBg,
                   labelStyle: TextStyle(
                     color: isEnabled ? Colors.white : context.textColorPrimary,
@@ -284,7 +284,8 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                     activeColor: Colors.purpleAccent,
                     contentPadding: EdgeInsets.zero,
                     dense: true,
-                    visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                    visualDensity:
+                        const VisualDensity(horizontal: -4, vertical: -4),
                     controlAffinity: ListTileControlAffinity.leading,
                     onChanged: (val) {
                       _triggerChanged(_rule.copyWith(showSize: val ?? false));
@@ -303,7 +304,8 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                     activeColor: Colors.purpleAccent,
                     contentPadding: EdgeInsets.zero,
                     dense: true,
-                    visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                    visualDensity:
+                        const VisualDensity(horizontal: -4, vertical: -4),
                     controlAffinity: ListTileControlAffinity.leading,
                     onChanged: (val) {
                       _triggerChanged(_rule.copyWith(showCount: val ?? false));
@@ -365,8 +367,11 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                   label: Text(
                     entry.value,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : context.textColorSecondary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected
+                          ? Colors.white
+                          : context.textColorSecondary,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                   selected: isSelected,
@@ -376,20 +381,19 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                         _selectedWrapperType = entry.key;
                       });
                       if (entry.key == 'bracket') {
-                        _triggerChanged(
-                            _rule.copyWith(wrapperStart: ' [', wrapperEnd: ']'));
+                        _triggerChanged(_rule.copyWith(
+                            wrapperStart: ' [', wrapperEnd: ']'));
                       } else if (entry.key == 'parenthesis') {
-                        _triggerChanged(
-                            _rule.copyWith(wrapperStart: ' (', wrapperEnd: ')'));
+                        _triggerChanged(_rule.copyWith(
+                            wrapperStart: ' (', wrapperEnd: ')'));
                       } else if (entry.key == 'brace') {
-                        _triggerChanged(
-                            _rule.copyWith(wrapperStart: ' {', wrapperEnd: '}'));
+                        _triggerChanged(_rule.copyWith(
+                            wrapperStart: ' {', wrapperEnd: '}'));
                       } else {
-                        _triggerChanged(
-                            _rule.copyWith(
-                              wrapperStart: _wrapperStartController.text,
-                              wrapperEnd: _wrapperEndController.text,
-                            ));
+                        _triggerChanged(_rule.copyWith(
+                          wrapperStart: _wrapperStartController.text,
+                          wrapperEnd: _wrapperEndController.text,
+                        ));
                       }
                     }
                   },
@@ -459,8 +463,11 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                   label: Text(
                     entry.value,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : context.textColorSecondary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected
+                          ? Colors.white
+                          : context.textColorSecondary,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                   selected: isSelected,
@@ -480,8 +487,8 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
                       } else if (entry.key == 'dash') {
                         _triggerChanged(_rule.copyWith(separator: '-'));
                       } else {
-                        _triggerChanged(
-                            _rule.copyWith(separator: _separatorCustomController.text));
+                        _triggerChanged(_rule.copyWith(
+                            separator: _separatorCustomController.text));
                       }
                     }
                   },
@@ -536,7 +543,7 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: allEnabled
-                  ? Colors.purpleAccent.withOpacity(0.2)
+                  ? Colors.purpleAccent.withValues(alpha: 0.2)
                   : context.inputBg,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
@@ -580,7 +587,7 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: noneEnabled
-                  ? Colors.redAccent.withOpacity(0.15)
+                  ? Colors.redAccent.withValues(alpha: 0.15)
                   : context.inputBg,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
@@ -635,7 +642,8 @@ class _SnifferRulePanelState extends State<SnifferRulePanel> {
       hintText: hint,
       labelStyle: TextStyle(color: context.textColorSecondary, fontSize: 12),
       hintStyle: TextStyle(
-          color: context.textColorSecondary.withOpacity(0.6), fontSize: 12),
+          color: context.textColorSecondary.withValues(alpha: 0.6),
+          fontSize: 12),
       filled: true,
       fillColor: context.inputBg,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

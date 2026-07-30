@@ -44,7 +44,7 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
     // Initialize controller texts
     _extController.text = _rule.extensionFilter;
     _nameController.text = _rule.nameContains;
-    
+
     // Deconstruct size value back to unit for UI
     if (_rule.sizeValueBytes == 0) {
       _sizeValueController.text = '';
@@ -52,7 +52,8 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
     } else {
       final bytes = _rule.sizeValueBytes;
       if (bytes >= 1024 * 1024 * 1024 && bytes % (1024 * 1024 * 1024) == 0) {
-        _sizeValueController.text = (bytes / (1024 * 1024 * 1024)).toStringAsFixed(0);
+        _sizeValueController.text =
+            (bytes / (1024 * 1024 * 1024)).toStringAsFixed(0);
         _selectedSizeUnit = SizeUnit.gb;
       } else if (bytes >= 1024 * 1024 && bytes % (1024 * 1024) == 0) {
         _sizeValueController.text = (bytes / (1024 * 1024)).toStringAsFixed(0);
@@ -179,7 +180,8 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
       labelText: label,
       hintText: hint,
       labelStyle: TextStyle(color: context.textColorSecondary),
-      hintStyle: TextStyle(color: context.textColorSecondary.withOpacity(0.5)),
+      hintStyle:
+          TextStyle(color: context.textColorSecondary.withValues(alpha: 0.5)),
       filled: true,
       fillColor: context.inputBg,
       enabledBorder: OutlineInputBorder(
@@ -196,8 +198,10 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
 
   @override
   Widget build(BuildContext context) {
-    final showFileOptions = _rule.target == DeleteTarget.file || _rule.target == DeleteTarget.both;
-    final showFolderOptions = _rule.target == DeleteTarget.folder || _rule.target == DeleteTarget.both;
+    final showFileOptions =
+        _rule.target == DeleteTarget.file || _rule.target == DeleteTarget.both;
+    final showFolderOptions = _rule.target == DeleteTarget.folder ||
+        _rule.target == DeleteTarget.both;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,14 +220,18 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
               children: [
                 Text(
                   '扫描与清理对象',
-                  style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
+                  style: TextStyle(
+                      color: context.textColorPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15),
                 ),
                 const SizedBox(height: 8),
 
                 // Object Type selection
                 Row(
                   children: [
-                    Text('清理目标:', style: TextStyle(color: context.textColorSecondary)),
+                    Text('清理目标:',
+                        style: TextStyle(color: context.textColorSecondary)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: SegmentedButton<DeleteTarget>(
@@ -261,13 +269,15 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                         },
                         style: ButtonStyle(
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                          backgroundColor:
+                              WidgetStateProperty.resolveWith<Color?>((states) {
                             if (states.contains(WidgetState.selected)) {
-                              return Colors.red.withOpacity(0.2);
+                              return Colors.red.withValues(alpha: 0.2);
                             }
                             return null;
                           }),
-                          foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                          foregroundColor:
+                              WidgetStateProperty.resolveWith<Color?>((states) {
                             if (states.contains(WidgetState.selected)) {
                               return Colors.redAccent;
                             }
@@ -296,7 +306,7 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                           _triggerChanged();
                         });
                       },
-                      activeColor: Colors.redAccent,
+                      activeThumbColor: Colors.redAccent,
                     ),
                   ],
                 ),
@@ -320,7 +330,10 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
               children: [
                 Text(
                   '高级筛选规则 (多条件取并集或交集配合)',
-                  style: TextStyle(color: context.textColorPrimary, fontWeight: FontWeight.bold, fontSize: 15),
+                  style: TextStyle(
+                      color: context.textColorPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15),
                 ),
                 const SizedBox(height: 10),
 
@@ -349,7 +362,9 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                   ),
                   const SizedBox(height: 6),
                   CheckboxListTile(
-                    title: Text('区分大小写', style: TextStyle(color: context.textColorPrimary, fontSize: 14)),
+                    title: Text('区分大小写',
+                        style: TextStyle(
+                            color: context.textColorPrimary, fontSize: 14)),
                     value: _rule.caseSensitive,
                     activeColor: Colors.redAccent,
                     onChanged: (val) {
@@ -367,29 +382,41 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
 
                 // Size Filter Section
                 if (!_rule.duplicateFilesOnly) ...[
-                  Text('大小筛选:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
+                  Text('大小筛选:',
+                      style: TextStyle(
+                          color: context.textColorSecondary, fontSize: 14)),
                   const SizedBox(height: 6),
                   Row(
                     children: [
                       Expanded(
                         flex: 3,
                         child: DropdownButtonFormField<SizeCondition>(
-                          value: _rule.sizeCondition,
+                          initialValue: _rule.sizeCondition,
                           dropdownColor: context.cardBg,
-                          style: TextStyle(color: context.textColorPrimary, fontSize: 14),
+                          style: TextStyle(
+                              color: context.textColorPrimary, fontSize: 14),
                           decoration: const InputDecoration(
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
                             border: OutlineInputBorder(),
                           ),
                           items: const [
-                            DropdownMenuItem(value: SizeCondition.any, child: Text('不限大小')),
-                            DropdownMenuItem(value: SizeCondition.greaterThan, child: Text('大于 (>)')),
-                            DropdownMenuItem(value: SizeCondition.lessThan, child: Text('小于 (<)')),
-                            DropdownMenuItem(value: SizeCondition.equalTo, child: Text('等于 (=)')),
+                            DropdownMenuItem(
+                                value: SizeCondition.any, child: Text('不限大小')),
+                            DropdownMenuItem(
+                                value: SizeCondition.greaterThan,
+                                child: Text('大于 (>)')),
+                            DropdownMenuItem(
+                                value: SizeCondition.lessThan,
+                                child: Text('小于 (<)')),
+                            DropdownMenuItem(
+                                value: SizeCondition.equalTo,
+                                child: Text('等于 (=)')),
                           ],
                           onChanged: (val) {
                             setState(() {
-                              _rule = _rule.copyWith(sizeCondition: val ?? SizeCondition.any);
+                              _rule = _rule.copyWith(
+                                  sizeCondition: val ?? SizeCondition.any);
                               _triggerChanged();
                             });
                           },
@@ -401,9 +428,14 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                           flex: 3,
                           child: TextField(
                             controller: _sizeValueController,
-                            style: TextStyle(color: context.textColorPrimary, fontSize: 14),
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                            style: TextStyle(
+                                color: context.textColorPrimary, fontSize: 14),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d*\.?\d*'))
+                            ],
                             decoration: _buildInputDecoration('数值'),
                           ),
                         ),
@@ -411,15 +443,19 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                         Expanded(
                           flex: 2,
                           child: DropdownButtonFormField<SizeUnit>(
-                            value: _selectedSizeUnit,
+                            initialValue: _selectedSizeUnit,
                             dropdownColor: context.cardBg,
-                            style: TextStyle(color: context.textColorPrimary, fontSize: 14),
+                            style: TextStyle(
+                                color: context.textColorPrimary, fontSize: 14),
                             decoration: const InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 8),
                               border: OutlineInputBorder(),
                             ),
                             items: SizeUnit.values.map((unit) {
-                              return DropdownMenuItem(value: unit, child: Text(unit.name.toUpperCase()));
+                              return DropdownMenuItem(
+                                  value: unit,
+                                  child: Text(unit.name.toUpperCase()));
                             }).toList(),
                             onChanged: (val) {
                               if (val != null) {
@@ -439,25 +475,37 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
 
                 // Time Filter Section
                 if (!_rule.duplicateFilesOnly) ...[
-                  Text('修改时间筛选:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
+                  Text('修改时间筛选:',
+                      style: TextStyle(
+                          color: context.textColorSecondary, fontSize: 14)),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<TimeCondition>(
-                    value: _rule.timeCondition,
+                    initialValue: _rule.timeCondition,
                     dropdownColor: context.cardBg,
-                    style: TextStyle(color: context.textColorPrimary, fontSize: 14),
+                    style: TextStyle(
+                        color: context.textColorPrimary, fontSize: 14),
                     decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       border: OutlineInputBorder(),
                     ),
                     items: const [
-                      DropdownMenuItem(value: TimeCondition.any, child: Text('不限修改时间')),
-                      DropdownMenuItem(value: TimeCondition.beforeDate, child: Text('修改时间早于某日')),
-                      DropdownMenuItem(value: TimeCondition.afterDate, child: Text('修改时间晚于某日')),
-                      DropdownMenuItem(value: TimeCondition.olderThanDays, child: Text('修改时间已超过指定天数')),
+                      DropdownMenuItem(
+                          value: TimeCondition.any, child: Text('不限修改时间')),
+                      DropdownMenuItem(
+                          value: TimeCondition.beforeDate,
+                          child: Text('修改时间早于某日')),
+                      DropdownMenuItem(
+                          value: TimeCondition.afterDate,
+                          child: Text('修改时间晚于某日')),
+                      DropdownMenuItem(
+                          value: TimeCondition.olderThanDays,
+                          child: Text('修改时间已超过指定天数')),
                     ],
                     onChanged: (val) {
                       setState(() {
-                        _rule = _rule.copyWith(timeCondition: val ?? TimeCondition.any);
+                        _rule = _rule.copyWith(
+                            timeCondition: val ?? TimeCondition.any);
                         _triggerChanged();
                       });
                     },
@@ -471,7 +519,8 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                           context: context,
                           initialDate: _rule.timeDate ?? DateTime.now(),
                           firstDate: DateTime(2000),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 365)),
                           builder: (context, child) {
                             return Theme(
                               data: Theme.of(context).copyWith(
@@ -481,7 +530,7 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                                         onPrimary: Colors.white,
                                         surface: Color(0xFF1E1E22),
                                         onSurface: Colors.white,
-                                        )
+                                      )
                                     : const ColorScheme.light(
                                         primary: Colors.redAccent,
                                         onPrimary: Colors.white,
@@ -515,7 +564,8 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                   if (_rule.timeCondition == TimeCondition.olderThanDays) ...[
                     TextField(
                       controller: _timeDaysController,
-                      style: TextStyle(color: context.textColorPrimary, fontSize: 14),
+                      style: TextStyle(
+                          color: context.textColorPrimary, fontSize: 14),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: _buildInputDecoration('输入天数'),
@@ -526,25 +576,31 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
 
                 // Hash (MD5) filter (Only for files)
                 if (showFileOptions && !_rule.duplicateFilesOnly) ...[
-                  Text('MD5 哈希值特定匹配:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
+                  Text('MD5 哈希值特定匹配:',
+                      style: TextStyle(
+                          color: context.textColorSecondary, fontSize: 14)),
                   const SizedBox(height: 6),
                   Row(
                     children: [
                       Expanded(
                         child: TextField(
                           controller: _hashController,
-                          style: TextStyle(color: context.textColorPrimary, fontSize: 13),
-                          decoration: _buildInputDecoration('目标 MD5 哈希值', hint: '输入32位MD5哈希字符串'),
+                          style: TextStyle(
+                              color: context.textColorPrimary, fontSize: 13),
+                          decoration: _buildInputDecoration('目标 MD5 哈希值',
+                              hint: '输入32位MD5哈希字符串'),
                         ),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton.icon(
-                        onPressed: _isCalculatingMd5 ? null : _pickFileAndCalculateMd5,
+                        onPressed:
+                            _isCalculatingMd5 ? null : _pickFileAndCalculateMd5,
                         icon: _isCalculatingMd5
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.redAccent),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.redAccent),
                               )
                             : const Icon(Icons.upload_file, size: 18),
                         label: Text(_isCalculatingMd5 ? '计算中' : '选择文件'),
@@ -554,7 +610,8 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                         ),
                       ),
                     ],
@@ -562,31 +619,41 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                   const SizedBox(height: 4),
                   Text(
                     '提示：匹配哈希值会在此期间自动读取并计算文件MD5，可能会减慢大型文件的扫描预览。',
-                    style: TextStyle(color: context.textColorSecondary, fontSize: 11),
+                    style: TextStyle(
+                        color: context.textColorSecondary, fontSize: 11),
                   ),
                   Divider(color: context.borderColor, height: 16),
                 ],
 
                 // Performance & Scan Settings
-                Text('扫描与性能设置:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
+                Text('扫描与性能设置:',
+                    style: TextStyle(
+                        color: context.textColorSecondary, fontSize: 14)),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<int>(
-                  value: _rule.maxThreads,
+                  initialValue: _rule.maxThreads,
                   dropdownColor: context.cardBg,
-                  style: TextStyle(color: context.textColorPrimary, fontSize: 13),
+                  style:
+                      TextStyle(color: context.textColorPrimary, fontSize: 13),
                   decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     border: const OutlineInputBorder(),
                     labelText: '哈希计算并发线程数',
-                    labelStyle: TextStyle(color: context.textColorSecondary, fontSize: 12),
+                    labelStyle: TextStyle(
+                        color: context.textColorSecondary, fontSize: 12),
                   ),
                   items: const [
                     DropdownMenuItem(value: 0, child: Text('自适应 (根据磁盘类型自动选择)')),
-                    DropdownMenuItem(value: 1, child: Text('单线程 (1 Isolate - 机械硬盘HDD推荐)')),
+                    DropdownMenuItem(
+                        value: 1, child: Text('单线程 (1 Isolate - 机械硬盘HDD推荐)')),
                     DropdownMenuItem(value: 2, child: Text('双线程 (2 Isolates)')),
-                    DropdownMenuItem(value: 4, child: Text('4 线程并发 (4 Isolates)')),
-                    DropdownMenuItem(value: 8, child: Text('8 线程并发 (8 Isolates)')),
-                    DropdownMenuItem(value: 16, child: Text('16 线程并发 (16 Isolates)')),
+                    DropdownMenuItem(
+                        value: 4, child: Text('4 线程并发 (4 Isolates)')),
+                    DropdownMenuItem(
+                        value: 8, child: Text('8 线程并发 (8 Isolates)')),
+                    DropdownMenuItem(
+                        value: 16, child: Text('16 线程并发 (16 Isolates)')),
                   ],
                   onChanged: (val) {
                     setState(() {
@@ -598,18 +665,23 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                 const SizedBox(height: 4),
                 Text(
                   '提示：程序默认会检测扫描目录所在的驱动器媒介类型。机械硬盘限制单线程以防磁头频繁寻道卡死，固态硬盘则会使用多线程跑满带宽。',
-                  style: TextStyle(color: context.textColorSecondary, fontSize: 11),
+                  style: TextStyle(
+                      color: context.textColorSecondary, fontSize: 11),
                 ),
                 Divider(color: context.borderColor, height: 16),
 
                 // Shortcut/Special Filters (Empty folder, Empty file, Duplicate Files)
-                Text('常用快捷筛选 / 一键清理项:', style: TextStyle(color: context.textColorSecondary, fontSize: 14)),
+                Text('常用快捷筛选 / 一键清理项:',
+                    style: TextStyle(
+                        color: context.textColorSecondary, fontSize: 14)),
                 const SizedBox(height: 6),
-                
+
                 // Empty Files Option
                 if (showFileOptions && !_rule.duplicateFilesOnly)
                   CheckboxListTile(
-                    title: Text('仅筛选空文件 (0字节)', style: TextStyle(color: context.textColorPrimary, fontSize: 13)),
+                    title: Text('仅筛选空文件 (0字节)',
+                        style: TextStyle(
+                            color: context.textColorPrimary, fontSize: 13)),
                     value: _rule.emptyFilesOnly,
                     activeColor: Colors.redAccent,
                     onChanged: (val) {
@@ -626,7 +698,9 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                 // Empty Folders Option
                 if (showFolderOptions && !_rule.duplicateFilesOnly)
                   CheckboxListTile(
-                    title: Text('仅筛选空文件夹 (子内容为空)', style: TextStyle(color: context.textColorPrimary, fontSize: 13)),
+                    title: Text('仅筛选空文件夹 (子内容为空)',
+                        style: TextStyle(
+                            color: context.textColorPrimary, fontSize: 13)),
                     value: _rule.emptyFoldersOnly,
                     activeColor: Colors.redAccent,
                     onChanged: (val) {
@@ -643,13 +717,18 @@ class _DeleteRulePanelState extends State<DeleteRulePanel> {
                 // Duplicate Files Option
                 if (showFileOptions)
                   CheckboxListTile(
-                    title: Text('仅筛选重复文件 (大小相同且MD5相同)', style: TextStyle(color: context.textColorPrimary, fontSize: 13)),
-                    subtitle: Text('将扫描相同内容的文件，并默认勾选多余副本（保留修改时间最早的一份）', style: TextStyle(color: context.textColorSecondary, fontSize: 11)),
+                    title: Text('仅筛选重复文件 (大小相同且MD5相同)',
+                        style: TextStyle(
+                            color: context.textColorPrimary, fontSize: 13)),
+                    subtitle: Text('将扫描相同内容的文件，并默认勾选多余副本（保留修改时间最早的一份）',
+                        style: TextStyle(
+                            color: context.textColorSecondary, fontSize: 11)),
                     value: _rule.duplicateFilesOnly,
                     activeColor: Colors.redAccent,
                     onChanged: (val) {
                       setState(() {
-                        _rule = _rule.copyWith(duplicateFilesOnly: val ?? false);
+                        _rule =
+                            _rule.copyWith(duplicateFilesOnly: val ?? false);
                         _triggerChanged();
                       });
                     },

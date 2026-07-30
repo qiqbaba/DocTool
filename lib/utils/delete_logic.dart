@@ -878,10 +878,8 @@ class DeleteLogic {
         op.wFunc = FO_DELETE;
         op.pFrom = pathPointer;
         op.pTo = Pointer.fromAddress(0);
-        op.fFlags = FILEOPERATION_FLAGS.FOF_ALLOWUNDO |
-            FILEOPERATION_FLAGS.FOF_NOCONFIRMATION |
-            FILEOPERATION_FLAGS.FOF_SILENT |
-            FILEOPERATION_FLAGS.FOF_NOERRORUI;
+        op.fFlags =
+            FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
         op.fAnyOperationsAborted = 0;
         op.hNameMappings = Pointer.fromAddress(0);
         op.lpszProgressTitle = Pointer<Utf16>.fromAddress(0);

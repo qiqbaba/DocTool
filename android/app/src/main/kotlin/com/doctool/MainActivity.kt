@@ -1,4 +1,4 @@
-package com.example.doctool.doctool
+package com.doctool
 
 import io.flutter.embedding.android.FlutterActivity
 

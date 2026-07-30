@@ -217,7 +217,8 @@ class _RenameRulePanelState extends State<RenameRulePanel>
       labelText: label,
       hintText: hint,
       labelStyle: TextStyle(color: context.textColorSecondary),
-      hintStyle: TextStyle(color: context.textColorSecondary.withOpacity(0.5)),
+      hintStyle:
+          TextStyle(color: context.textColorSecondary.withValues(alpha: 0.5)),
       filled: true,
       fillColor: context.inputBg,
       enabledBorder: OutlineInputBorder(
@@ -248,7 +249,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
         Switch(
           value: val,
           onChanged: onToggle,
-          activeColor: Colors.indigoAccent,
+          activeThumbColor: Colors.indigoAccent,
         ),
       ],
     );
@@ -317,7 +318,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                           backgroundColor:
                               WidgetStateProperty.resolveWith<Color?>((states) {
                             if (states.contains(WidgetState.selected)) {
-                              return Colors.indigo.withOpacity(0.2);
+                              return Colors.indigo.withValues(alpha: 0.2);
                             }
                             return null;
                           }),
@@ -353,7 +354,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                           _triggerChanged();
                         });
                       },
-                      activeColor: Colors.indigoAccent,
+                      activeThumbColor: Colors.indigoAccent,
                     ),
                   ],
                 ),
@@ -473,7 +474,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                   backgroundColor:
                       WidgetStateProperty.resolveWith<Color?>((states) {
                     if (states.contains(WidgetState.selected)) {
-                      return Colors.indigo.withOpacity(0.2);
+                      return Colors.indigo.withValues(alpha: 0.2);
                     }
                     return null;
                   }),
@@ -526,7 +527,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                   style: TextStyle(color: context.textColorSecondary)),
               const SizedBox(height: 6),
               DropdownButtonFormField<DeleteMode>(
-                value: del.mode,
+                initialValue: del.mode,
                 dropdownColor: context.cardBg,
                 style: TextStyle(color: context.textColorPrimary),
                 decoration: _buildInputDecoration('选择删除模式'),
@@ -587,7 +588,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                           backgroundColor:
                               WidgetStateProperty.resolveWith<Color?>((states) {
                             if (states.contains(WidgetState.selected)) {
-                              return Colors.indigo.withOpacity(0.2);
+                              return Colors.indigo.withValues(alpha: 0.2);
                             }
                             return null;
                           }),
@@ -690,7 +691,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                           backgroundColor:
                               WidgetStateProperty.resolveWith<Color?>((states) {
                             if (states.contains(WidgetState.selected)) {
-                              return Colors.indigo.withOpacity(0.2);
+                              return Colors.indigo.withValues(alpha: 0.2);
                             }
                             return null;
                           }),
@@ -797,7 +798,7 @@ class _RenameRulePanelState extends State<RenameRulePanel>
                   backgroundColor:
                       WidgetStateProperty.resolveWith<Color?>((states) {
                     if (states.contains(WidgetState.selected)) {
-                      return Colors.indigo.withOpacity(0.2);
+                      return Colors.indigo.withValues(alpha: 0.2);
                     }
                     return null;
                   }),

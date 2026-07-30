@@ -671,7 +671,7 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                     size: 24,
                     color: !_isExecuting
                         ? context.textColorPrimary
-                        : context.textColorSecondary.withOpacity(0.5),
+                        : context.textColorSecondary.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -683,9 +683,10 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.purple.withOpacity(0.15),
+                  color: Colors.purple.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.purple.withOpacity(0.3)),
+                  border:
+                      Border.all(color: Colors.purple.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -790,7 +791,7 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                             border: Border.all(color: context.borderColor),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
+                                color: Colors.black.withValues(alpha: 0.15),
                                 blurRadius: 15,
                                 offset: const Offset(0, 8),
                               ),
@@ -860,7 +861,7 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                       : Icons.saved_search,
                                   size: 48,
                                   color: context.textColorSecondary
-                                      .withOpacity(0.5),
+                                      .withValues(alpha: 0.5),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -900,7 +901,7 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                         ? Colors.redAccent
                                         : (hasChanges && item.isSelected
                                             ? Colors.purpleAccent
-                                                .withOpacity(0.5)
+                                                .withValues(alpha: 0.5)
                                             : context.borderColor),
                                     width: 1.5,
                                   ),
@@ -1070,7 +1071,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                                       decoration: BoxDecoration(
                                                           color: Colors
                                                               .redAccent
-                                                              .withOpacity(0.2),
+                                                              .withValues(
+                                                                  alpha: 0.2),
                                                           borderRadius:
                                                               BorderRadius
                                                                   .circular(6)),
@@ -1110,7 +1112,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                                       decoration: BoxDecoration(
                                                           color: Colors
                                                               .greenAccent
-                                                              .withOpacity(0.2),
+                                                              .withValues(
+                                                                  alpha: 0.2),
                                                           borderRadius:
                                                               BorderRadius
                                                                   .circular(6)),
@@ -1129,8 +1132,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                                       decoration: BoxDecoration(
                                                           color: Colors
                                                               .purpleAccent
-                                                              .withOpacity(
-                                                                  0.15),
+                                                              .withValues(
+                                                                  alpha: 0.15),
                                                           borderRadius:
                                                               BorderRadius
                                                                   .circular(6)),
@@ -1185,7 +1188,7 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                           '此文件夹是空文件夹',
                                           style: TextStyle(
                                               color: context.textColorSecondary
-                                                  .withOpacity(0.7),
+                                                  .withValues(alpha: 0.7),
                                               fontSize: 11,
                                               fontStyle: FontStyle.italic),
                                         ),
@@ -1199,7 +1202,8 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 16, vertical: 12),
-                                        color: context.listBg.withOpacity(0.3),
+                                        color: context.listBg
+                                            .withValues(alpha: 0.3),
                                         child: Column(
                                           children: FileCategory.all
                                               .where((cat) =>
@@ -1271,7 +1275,9 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
     final activeStats = item.getActiveStats(widget.rule);
     for (var cat in FileCategory.all) {
       if (!widget.rule.enabledTypes.contains(cat) &&
-          (cat != FileCategory.other || !widget.rule.enableOther)) continue;
+          (cat != FileCategory.other || !widget.rule.enableOther)) {
+        continue;
+      }
       final info = activeStats[cat]!;
       if (info.sizeBytes <= 0) continue;
       final flexVal = ((info.sizeBytes / totalBytes) * 1000).round();
@@ -1304,7 +1310,9 @@ class _SnifferPreviewPanelState extends State<SnifferPreviewPanel> {
     final activeStats = item.getActiveStats(widget.rule);
     for (var cat in FileCategory.all) {
       if (!widget.rule.enabledTypes.contains(cat) &&
-          (cat != FileCategory.other || !widget.rule.enableOther)) continue;
+          (cat != FileCategory.other || !widget.rule.enableOther)) {
+        continue;
+      }
       final info = activeStats[cat]!;
       if (info.count <= 0) continue;
 

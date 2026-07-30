@@ -321,9 +321,10 @@ class _PreviewPanelState extends State<PreviewPanel> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.indigo.withOpacity(0.15),
+                  color: Colors.indigo.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.indigo.withOpacity(0.3)),
+                  border:
+                      Border.all(color: Colors.indigo.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,7 +408,7 @@ class _PreviewPanelState extends State<PreviewPanel> {
                           border: Border.all(color: context.borderColor),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
+                              color: Colors.black.withValues(alpha: 0.15),
                               blurRadius: 15,
                               offset: const Offset(0, 8),
                             ),
@@ -446,8 +447,8 @@ class _PreviewPanelState extends State<PreviewPanel> {
                               Icon(
                                 Icons.check_circle_outline,
                                 size: 48,
-                                color:
-                                    context.textColorSecondary.withOpacity(0.5),
+                                color: context.textColorSecondary
+                                    .withValues(alpha: 0.5),
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -489,8 +490,8 @@ class _PreviewPanelState extends State<PreviewPanel> {
                                 newNameColor = context.isDarkMode
                                     ? Colors.redAccent
                                     : Colors.red[700]!;
-                                rowBgColor = Colors.red.withOpacity(
-                                    context.isDarkMode ? 0.05 : 0.08);
+                                rowBgColor = Colors.red.withValues(
+                                    alpha: context.isDarkMode ? 0.05 : 0.08);
                                 trailingIcon = Tooltip(
                                   message: validationError,
                                   child: Icon(Icons.error_outline,
@@ -503,8 +504,8 @@ class _PreviewPanelState extends State<PreviewPanel> {
                                 newNameColor = context.isDarkMode
                                     ? Colors.greenAccent
                                     : Colors.green[700]!;
-                                rowBgColor = Colors.green.withOpacity(
-                                    context.isDarkMode ? 0.03 : 0.06);
+                                rowBgColor = Colors.green.withValues(
+                                    alpha: context.isDarkMode ? 0.03 : 0.06);
                               }
 
                               return Container(
