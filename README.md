@@ -1,5 +1,7 @@
 # DocTool
 
+[![Build & Package](https://github.com/qiqbaba/DocTool/actions/workflows/build.yml/badge.svg)](https://github.com/qiqbaba/DocTool/actions/workflows/build.yml)
+
 一款基于 Flutter 构建的**跨平台批量文件操作工具**，支持 Windows 和 Android 双平台。提供批量重命名、批量删除、批量移动和文件嗅探四大核心功能，所有操作均支持**实时预览**，确认无误后再执行。
 
 ## 功能特性
@@ -90,6 +92,13 @@ flutter build windows --release
 # 构建 Android APK
 flutter build apk --release
 ```
+
+## 自动打包与 GitHub Release
+
+本项目已接入 GitHub Actions 自动打包工作流：
+
+- **构件预览（Artifacts）**：每次 `push` 至 `main` 分支或提交 Pull Request 时，GitHub Actions 会自动编译 Windows 绿色压缩包与 Android APK。可在 GitHub Repository Actions 页面直接下载体验。
+- **自动 Release 发布**：推送符合 `v*` 规则的版本标签（例如：`git tag v1.0.0 && git push origin v1.0.0`）时，工作流将自动创建 GitHub Release 并上传 `DocTool-Windows-x64.zip` 与 `DocTool-Android.apk` 发布包。
 
 ## 项目结构
 
