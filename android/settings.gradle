@@ -34,8 +34,14 @@ gradle.allprojects {
                 task.kotlinOptions.languageVersion = "1.8"
                 task.kotlinOptions.apiVersion = "1.8"
                 task.kotlinOptions.jvmTarget = "1.8"
-            } catch (Exception ignored) {
-            }
+                task.kotlinOptions.freeCompilerArgs += ["-language-version", "1.8", "-api-version", "1.8"]
+            } catch (Throwable ignored) {}
+            try {
+                def kv18 = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_8
+                task.compilerOptions.languageVersion.set(kv18)
+                task.compilerOptions.apiVersion.set(kv18)
+                task.compilerOptions.freeCompilerArgs.addAll(["-language-version", "1.8", "-api-version", "1.8"])
+            } catch (Throwable ignored) {}
         }
     }
 }
