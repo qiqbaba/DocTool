@@ -36,6 +36,24 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Configure Gradle Init Script
+        run: |
+          mkdir -p ~/.gradle/init.d
+          cat << 'EOF' > ~/.gradle/init.d/kotlin.gradle
+          gradle.allprojects {
+              tasks.configureEach { task ->
+                  if (task.class.name.contains("KotlinCompile")) {
+                      try {
+                          task.kotlinOptions.languageVersion = "1.8"
+                          task.kotlinOptions.apiVersion = "1.8"
+                          task.kotlinOptions.jvmTarget = "1.8"
+                      } catch (Exception ignored) {
+                      }
+                  }
+              }
+          }
+          EOF
+
       - name: Build APK
         run: flutter build apk --release
 

@@ -26,3 +26,17 @@ plugins {
 }
 
 include ":app"
+
+gradle.allprojects {
+    tasks.configureEach { task ->
+        if (task.class.name.contains("KotlinCompile")) {
+            try {
+                task.kotlinOptions.languageVersion = "1.8"
+                task.kotlinOptions.apiVersion = "1.8"
+                task.kotlinOptions.jvmTarget = "1.8"
+            } catch (Exception ignored) {
+            }
+        }
+    }
+}
+
