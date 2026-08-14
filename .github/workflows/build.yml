@@ -35,36 +35,48 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Patch Flutter SDK Kotlin language version
+      - name: Fix Kotlin language version for Flutter Gradle plugin
         run: |
-          FLUTTER_SDK_PATH=$(flutter --no-version-check sdk-path 2>/dev/null || echo "")
-          if [ -z "$FLUTTER_SDK_PATH" ]; then
-            FLUTTER_BIN=$(which flutter)
-            FLUTTER_SDK_PATH=$(dirname "$(dirname "$FLUTTER_BIN")")
+          echo "=== Debug: FLUTTER_ROOT=$FLUTTER_ROOT ==="
+          GRADLE_DIR="$FLUTTER_ROOT/packages/flutter_tools/gradle"
+          echo "=== Listing $GRADLE_DIR ==="
+          ls -la "$GRADLE_DIR" || echo "Directory not found"
+          echo "=== Patching build scripts ==="
+          for f in "$GRADLE_DIR/build.gradle.kts" "$GRADLE_DIR/build.gradle"; do
+            if [ -f "$f" ]; then
+              echo "Found: $f"
+              echo "--- Before (last 5 lines) ---"
+              tail -5 "$f"
+            fi
+          done
+          if [ -f "$GRADLE_DIR/build.gradle.kts" ]; then
+            printf '\ntasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {\n    compilerOptions {\n        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)\n        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)\n    }\n}\n' >> "$GRADLE_DIR/build.gradle.kts"
+            echo "--- After patch (last 10 lines) ---"
+            tail -10 "$GRADLE_DIR/build.gradle.kts"
           fi
-          echo "Flutter SDK at: $FLUTTER_SDK_PATH"
-          KTS="$FLUTTER_SDK_PATH/packages/flutter_tools/gradle/build.gradle.kts"
-          if [ -f "$KTS" ]; then
-            echo "" >> "$KTS"
-            echo 'tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {' >> "$KTS"
-            echo '    compilerOptions {' >> "$KTS"
-            echo '        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)' >> "$KTS"
-            echo '        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)' >> "$KTS"
-            echo '    }' >> "$KTS"
-            echo '}' >> "$KTS"
-            echo "Patched build.gradle.kts OK"
+          if [ -f "$GRADLE_DIR/build.gradle" ]; then
+            printf '\ntasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {\n    compilerOptions {\n        languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9\n        apiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9\n    }\n}\n' >> "$GRADLE_DIR/build.gradle"
+            echo "--- After patch (last 10 lines) ---"
+            tail -10 "$GRADLE_DIR/build.gradle"
           fi
-          GROOVY="$FLUTTER_SDK_PATH/packages/flutter_tools/gradle/build.gradle"
-          if [ -f "$GROOVY" ]; then
-            echo "" >> "$GROOVY"
-            echo 'tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {' >> "$GROOVY"
-            echo '    compilerOptions {' >> "$GROOVY"
-            echo '        languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9' >> "$GROOVY"
-            echo '        apiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9' >> "$GROOVY"
-            echo '    }' >> "$GROOVY"
-            echo '}' >> "$GROOVY"
-            echo "Patched build.gradle OK"
-          fi
+          echo "=== Also creating Gradle init script as fallback ==="
+          mkdir -p ~/.gradle/init.d
+          cat > ~/.gradle/init.d/fix-kotlin-lang.gradle << 'INITEOF'
+          beforeSettings { settings ->
+              settings.gradle.afterProject { project ->
+                  try {
+                      project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                          compilerOptions {
+                              languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9
+                              apiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9
+                          }
+                      }
+                  } catch (Exception ignored) {}
+              }
+          }
+          INITEOF
+          echo "Init script created at ~/.gradle/init.d/fix-kotlin-lang.gradle"
+          cat ~/.gradle/init.d/fix-kotlin-lang.gradle
 
       - name: Install dependencies
         run: flutter pub get
