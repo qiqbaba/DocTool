@@ -72,7 +72,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/DocTool.git
+git clone https://github.com/qiqbaba/DocTool.git
 cd DocTool
 
 # 安装依赖
@@ -117,6 +117,21 @@ lib/
     └── android_dir_picker.dart # Android 目录选择器
 ```
 
+## 相关开源项目与参照
+
+本项目在立项与开发过程中参考并致敬了开源社区中优秀的文件处理工具：
+
+### Flutter 生态同类项目
+- **[Flut Renamer](https://github.com/sun-jiao/flut-renamer)**：基于 Flutter 的全平台批量重命名工具。
+- **[once_power](https://github.com/ilgnefz/once_power)**：基于 Flutter 的桌面端文件与媒体整理工具。
+
+### 其他语言高星开源项目
+- **[PowerRename (Microsoft PowerToys)](https://github.com/microsoft/PowerToys)** *(C++, ⭐ 100k+)*：微软官方开源工具集中的批量重命名组件，支持正则与实时预览。
+- **[czkawka](https://github.com/qarmin/czkawka)** *(Rust, ⭐ 18k+)*：多线程超高速重复文件查找、空文件夹与大文件清理工具。
+- **[F2](https://github.com/ayoisaiah/f2)** *(Go, ⭐ 2k+)*：现代跨平台 CLI 批量重命名与正则替换工具。
+- **[nomino](https://github.com/yaa110/nomino)** *(Rust, ⭐ 700+)*：基于 Rust 的高性能命令行批量重命名与正则处理工具。
+
 ## 许可证
 
 本项目基于 [MIT License](LICENSE) 开源。
+
