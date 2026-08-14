@@ -39,9 +39,14 @@ jobs:
           FLUTTER_BIN=$(which flutter)
           FLUTTER_SDK_PATH=$(dirname $(dirname "$FLUTTER_BIN"))
           echo "Patching Flutter SDK at: $FLUTTER_SDK_PATH"
-          if [ -d "$FLUTTER_SDK_PATH/packages/flutter_tools/gradle" ]; then
-            find "$FLUTTER_SDK_PATH/packages/flutter_tools/gradle" -type f \( -name "*.gradle" -o -name "*.gradle.kts" \) -exec sed -i 's/"1.4"/"1.8"/g' {} +
-            find "$FLUTTER_SDK_PATH/packages/flutter_tools/gradle" -type f \( -name "*.gradle" -o -name "*.gradle.kts" \) -exec sed -i "s/'1.4'/'1.8'/g" {} +
+          TARGET_DIR="$FLUTTER_SDK_PATH/packages/flutter_tools/gradle"
+          if [ -d "$TARGET_DIR" ]; then
+            if [ -f "$TARGET_DIR/build.gradle.kts" ]; then
+              echo 'tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach { kotlinOptions.languageVersion = "1.8" }' >> "$TARGET_DIR/build.gradle.kts"
+            fi
+            if [ -f "$TARGET_DIR/build.gradle" ]; then
+              echo 'tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { kotlinOptions { languageVersion = "1.8" } }' >> "$TARGET_DIR/build.gradle"
+            fi
           fi
 
       - name: Install dependencies
