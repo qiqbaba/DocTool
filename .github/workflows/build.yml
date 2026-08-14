@@ -34,6 +34,16 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Patch Flutter SDK Gradle Kotlin version
+        run: |
+          FLUTTER_BIN=$(which flutter)
+          FLUTTER_SDK_PATH=$(dirname $(dirname "$FLUTTER_BIN"))
+          echo "Patching Flutter SDK at: $FLUTTER_SDK_PATH"
+          if [ -d "$FLUTTER_SDK_PATH/packages/flutter_tools/gradle" ]; then
+            find "$FLUTTER_SDK_PATH/packages/flutter_tools/gradle" -type f \( -name "*.gradle" -o -name "*.gradle.kts" \) -exec sed -i 's/"1.4"/"1.8"/g' {} +
+            find "$FLUTTER_SDK_PATH/packages/flutter_tools/gradle" -type f \( -name "*.gradle" -o -name "*.gradle.kts" \) -exec sed -i "s/'1.4'/'1.8'/g" {} +
+          fi
+
       - name: Install dependencies
         run: flutter pub get
 
