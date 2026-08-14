@@ -26,6 +26,7 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: 'gradle'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -35,31 +36,6 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Configure Gradle Init Script
-        run: |
-          mkdir -p ~/.gradle/init.d
-          cat << 'EOF' > ~/.gradle/init.d/kotlin.gradle
-          gradle.allprojects {
-              tasks.configureEach { task ->
-                  if (task.class.name.contains("KotlinCompile")) {
-                      try {
-                          task.kotlinOptions.languageVersion = "1.8"
-                          task.kotlinOptions.apiVersion = "1.9"
-                          task.kotlinOptions.jvmTarget = "1.8"
-                          task.kotlinOptions.freeCompilerArgs += ["-language-version", "1.8", "-api-version", "1.9"]
-                      } catch (Throwable ignored) {}
-                      try {
-                          def kv18 = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_8
-                          def kv19 = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9
-                          task.compilerOptions.languageVersion.set(kv18)
-                          task.compilerOptions.apiVersion.set(kv19)
-                          task.compilerOptions.freeCompilerArgs.addAll(["-language-version", "1.8", "-api-version", "1.9"])
-                      } catch (Throwable ignored) {}
-                  }
-              }
-          }
-          EOF
 
       - name: Build APK
         run: flutter build apk --release
