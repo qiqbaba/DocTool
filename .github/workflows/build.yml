@@ -31,23 +31,9 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.24.3'
           channel: 'stable'
           cache: true
-
-      - name: Patch Flutter SDK Gradle Kotlin version
-        run: |
-          FLUTTER_BIN=$(which flutter)
-          FLUTTER_SDK_PATH=$(dirname $(dirname "$FLUTTER_BIN"))
-          echo "Patching Flutter SDK at: $FLUTTER_SDK_PATH"
-          TARGET_DIR="$FLUTTER_SDK_PATH/packages/flutter_tools/gradle"
-          if [ -d "$TARGET_DIR" ]; then
-            if [ -f "$TARGET_DIR/build.gradle.kts" ]; then
-              echo 'tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach { compilerOptions { languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_8) } }' >> "$TARGET_DIR/build.gradle.kts"
-            fi
-            if [ -f "$TARGET_DIR/build.gradle" ]; then
-              echo 'tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { kotlinOptions { languageVersion = "1.8" } }' >> "$TARGET_DIR/build.gradle"
-            fi
-          fi
 
       - name: Install dependencies
         run: flutter pub get
@@ -77,6 +63,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.24.3'
           channel: 'stable'
           cache: true
 
