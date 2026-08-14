@@ -42,7 +42,7 @@ jobs:
           TARGET_DIR="$FLUTTER_SDK_PATH/packages/flutter_tools/gradle"
           if [ -d "$TARGET_DIR" ]; then
             if [ -f "$TARGET_DIR/build.gradle.kts" ]; then
-              echo 'tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach { kotlinOptions.languageVersion = "1.8" }' >> "$TARGET_DIR/build.gradle.kts"
+              echo 'tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach { compilerOptions { languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_8) } }' >> "$TARGET_DIR/build.gradle.kts"
             fi
             if [ -f "$TARGET_DIR/build.gradle" ]; then
               echo 'tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { kotlinOptions { languageVersion = "1.8" } }' >> "$TARGET_DIR/build.gradle"
