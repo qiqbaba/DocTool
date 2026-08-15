@@ -35,39 +35,6 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Fix Kotlin language version for Flutter Gradle plugin
-        run: |
-          GRADLE_DIR="$FLUTTER_ROOT/packages/flutter_tools/gradle"
-          echo "=== Fixing Kotlin language version in Flutter Gradle plugin ==="
-          echo "=== Searching for files with KOTLIN_1_4 ==="
-          grep -rn "KOTLIN_1_4" "$GRADLE_DIR" || echo "No KOTLIN_1_4 enum references found"
-          echo "=== Searching for languageVersion 1.4 string literals ==="
-          grep -rn 'languageVersion.*1\.4\|apiVersion.*1\.4' "$GRADLE_DIR" || echo "No string literal references found"
-          
-          # Replace KOTLIN_1_4 enum constant with KOTLIN_1_9 in all files
-          find "$GRADLE_DIR" -type f \( -name "*.gradle.kts" -o -name "*.gradle" -o -name "*.kt" \) | while read f; do
-            if grep -qE "KOTLIN_1_4" "$f"; then
-              echo "=== Patching KOTLIN_1_4 in: $f ==="
-              sed -i 's/KOTLIN_1_4/KOTLIN_1_9/g' "$f"
-            fi
-            if grep -qE 'languageVersion.*"1\.4"|apiVersion.*"1\.4"' "$f"; then
-              echo "=== Patching string version 1.4 in: $f ==="
-              sed -i 's/\(languageVersion.*\)"1\.4"/\1"1.9"/g' "$f"
-              sed -i 's/\(apiVersion.*\)"1\.4"/\1"1.9"/g' "$f"
-            fi
-          done
-          
-          echo "=== Verify: no more 1.4 references ==="
-          grep -rn "KOTLIN_1_4" "$GRADLE_DIR" && echo "WARNING: KOTLIN_1_4 still found!" || echo "OK: No KOTLIN_1_4 remaining"
-          
-          echo "=== Show patched build files ==="
-          for f in "$GRADLE_DIR/build.gradle.kts" "$GRADLE_DIR/build.gradle"; do
-            if [ -f "$f" ]; then
-              echo "--- $f ---"
-              cat "$f"
-            fi
-          done
-
       - name: Install dependencies
         run: flutter pub get
 
